@@ -25,7 +25,15 @@ Usage:
 <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes" />
 
 <xsl:template match="/">
-<xsl:apply-templates select="status"/>
+<xsl:apply-templates select="status|hash"/>
+</xsl:template>
+
+<xsl:template match="hash">
+<xsl:message terminate="yes">
+   <xsl:value-of select="request"/>
+   <xsl:text> </xsl:text>
+   <xsl:value-of select="error"/>
+</xsl:message>
 </xsl:template>
 
 <xsl:template match="status">
@@ -52,7 +60,7 @@ Usage:
          <xsl:apply-templates select="user/profile_text_color"/>
       </xsl:attribute>
       
-      <xsl:if test="user/profile_background_image_url">
+      <xsl:if test="user/profile_background_image_url and string-length(user/profile_background_image_url)&gt;0 and user/profile_use_background_image='true'">
                <xsl:attribute name="background-position-horizontal">left</xsl:attribute>
                <xsl:attribute name="background-position-vertical">top</xsl:attribute>
                <xsl:apply-templates select="user/profile_background_tile"/>
@@ -155,7 +163,7 @@ Usage:
          >
        <fo:block font-size="16px">
          <xsl:choose>
-            <xsl:when test="../url">
+            <xsl:when test="../url and string-length(../url)&gt;0">
                 <xsl:element name="fo:basic-link">
                   <xsl:attribute name="external-destination">
                      <xsl:value-of select="../url"/>
@@ -170,8 +178,8 @@ Usage:
                 <xsl:value-of select="text()"/>
             </xsl:otherwise>
          </xsl:choose>
-         <xsl:if test="../location">
-            <xsl:text> </xsl:text>
+         <xsl:if test="../location and string-length(../location)&gt;0">
+            <xsl:text> , </xsl:text>
             <xsl:value-of select="../location"/>
          </xsl:if>
        </fo:block>
@@ -215,7 +223,7 @@ Usage:
 <xsl:comment>Creation date</xsl:comment>
 <fo:block-container
          absolute-position="fixed"
-         left="230px" top="410px"
+         left="230px" top="430px"
          right="230px" 
          background-color="white"
          color="{$color}"
@@ -233,6 +241,7 @@ Usage:
        </fo:block>
 </fo:block-container>
 </xsl:template>
+
 
 
 </xsl:stylesheet>
