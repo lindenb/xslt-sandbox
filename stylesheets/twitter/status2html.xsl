@@ -68,7 +68,7 @@ Usage:
 </xsl:attribute>
 
 <xsl:element name="div">
-      <xsl:attribute name="style">margin-left:auto;margin-right:auto;
+      <xsl:attribute name="style">border-radius:15px;-moz-border-radius: 15px;margin-left:auto;margin-right:auto;
 width:400px;height:233px;background-color:white; border: 1px solid black;margin-top:30px;margin-bottom:30px;padding:15px;
       </xsl:attribute>
       <div style="position:relative;">
