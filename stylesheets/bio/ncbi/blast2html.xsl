@@ -15,11 +15,12 @@ Motivation:
 	transforms a blast xml result to HTML
 Example:
 	xsltproc -\-novalid blast2html.xsl blast.xml
-
+Reference:
+	http://biostar.stackexchange.com/questions/6658
 
 -->
 <!-- ========================================================================= -->
-<xsl:output method='xml' indent='yes' omit-xml-declaration="no"/>
+<xsl:output method='xml' indent='no' omit-xml-declaration="no"/>
 
 
 <xsl:variable name="fastaLength" select="60"/>
