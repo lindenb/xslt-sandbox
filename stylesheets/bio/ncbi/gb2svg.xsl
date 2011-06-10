@@ -4,15 +4,14 @@ Author:
         Pierre Lindenbaum
         http://plindenbaum.blogspot.com
 Motivation:
-      transform the xmloutput of genbank-xml to SVG
+      transforms the xmloutput of genbank-xml to SVG
 Reference:
      
 Params:
    * width
-   * height
-   * build
+
 Usage :
-      xsltproc ucsc-sql2svg.xsl sequence.gbc.xml > file.svg
+      xsltproc db2svg.xsl sequence.gbc.xml > file.svg
 -->
 
 <xsl:stylesheet
