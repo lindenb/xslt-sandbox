@@ -23,7 +23,8 @@ Author
         version='1.0'
         >
 <xsl:output method="xml" />
-<xsl:param name="factor" select="number(2)"/>
+<xsl:param name="maxShift" select="number(5.0)"/>
+<xsl:variable name="countLayers" select="1.0 * count(/svg:svg/svg:g[@inkscape:groupmode='layer'])"/>
 <xsl:template match="/svg:svg">
 <svg:svg>
 <xsl:copy-of select="@*"/>
@@ -47,7 +48,6 @@ Author
 
 <xsl:template match="svg:g[@inkscape:groupmode='layer']">
 <xsl:comment>== LAYER ================================================================
-<xsl:value-of select="position()"/>
 </xsl:comment>
 <svg:g>
 <xsl:copy-of select="@*"/>
@@ -69,6 +69,8 @@ Author
 Filters for anaglyph
 </xsl:comment>
 <xsl:for-each select="/svg:svg/svg:g[@inkscape:groupmode='layer']">
+<xsl:comment>==FILTER DEF <xsl:value-of select="position()"/> ====</xsl:comment>
+<xsl:variable name="shift" select="(position() div $countLayers) * $maxShift"/>
 <xsl:element name="svg:filter">
 <xsl:attribute name="id"><xsl:value-of select="concat('filter',generate-id(.))"/></xsl:attribute>
 <xsl:attribute name="filterUnits">objectBoundingBox</xsl:attribute>
@@ -80,7 +82,7 @@ Filters for anaglyph
 <xsl:element name="svg:feOffset">
 	<xsl:attribute name="in">SourceGraphic</xsl:attribute>
 	<xsl:attribute name="result">L1</xsl:attribute>
-	<xsl:attribute name="dx"><xsl:value-of select="-1 * position()* $factor"/></xsl:attribute>
+	<xsl:attribute name="dx"><xsl:value-of select="-1.0 * $shift"/></xsl:attribute>
 	<xsl:attribute name="dy">0</xsl:attribute>
 </xsl:element>
 
@@ -88,7 +90,7 @@ Filters for anaglyph
 <xsl:element name="svg:feOffset">
 	<xsl:attribute name="in">SourceGraphic</xsl:attribute>
 	<xsl:attribute name="result">R1</xsl:attribute>
-	<xsl:attribute name="dx"><xsl:value-of select="position()* $factor"/></xsl:attribute>
+	<xsl:attribute name="dx"><xsl:value-of select="1.0 * $shift"/></xsl:attribute>
 	<xsl:attribute name="dy">0</xsl:attribute>
 </xsl:element>
 
