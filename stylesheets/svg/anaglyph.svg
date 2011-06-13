@@ -1,0 +1,124 @@
+<?xml version='1.0'  encoding="UTF-8" ?>
+ <!--
+
+Motivation:
+        Creates an anaglyph SVG for a SVG image created
+        with inkscape
+Reference:
+	http://en.wikipedia.org/wiki/Anaglyph_image
+Author
+        Pierre Lindenbaum PhD plindenbaum@yahoo.fr
+        http://plindenbaum.blogspot.com
+
+
+
+-->
+
+<xsl:stylesheet
+        xmlns:xsl='http://www.w3.org/1999/XSL/Transform'
+	xmlns:svg="http://www.w3.org/2000/svg"
+	xmlns:h='http://www.w3.org/1999/xhtml'
+	xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+	xmlns="http://www.w3.org/2000/svg"
+        version='1.0'
+        >
+<xsl:output method="xml" />
+<xsl:param name="factor" select="number(2)"/>
+<xsl:template match="/svg:svg">
+<svg:svg>
+<xsl:copy-of select="@*"/>
+<xsl:if test="not(svg:defs)">
+	<svg:defs>
+		<xsl:call-template name="filters"/>
+	</svg:defs>
+</xsl:if>
+<xsl:apply-templates select="*|text()"/>
+</svg:svg>
+</xsl:template>
+
+
+<xsl:template match="svg:defs">
+<svg:defs>
+<xsl:copy-of select="@*"/>
+<xsl:apply-templates select="*|text()"/>
+<xsl:call-template name="filters"/>
+</svg:defs>
+</xsl:template>
+
+<xsl:template match="svg:g[@inkscape:groupmode='layer']">
+<xsl:comment>== LAYER ================================================================
+<xsl:value-of select="position()"/>
+</xsl:comment>
+<svg:g>
+<xsl:copy-of select="@*"/>
+<xsl:attribute name="filter"><xsl:value-of select="concat('url(#filter',generate-id(.),')')"/></xsl:attribute>
+<xsl:copy>
+<xsl:apply-templates select="*|text()"/>
+</xsl:copy>
+</svg:g>
+</xsl:template>
+
+<xsl:template match="*|text()|@*">
+<xsl:copy>
+<xsl:apply-templates select="@*|*|text()"/>
+</xsl:copy>
+</xsl:template>
+
+<xsl:template name="filters">
+<xsl:comment>
+Filters for anaglyph
+</xsl:comment>
+<xsl:for-each select="/svg:svg/svg:g[@inkscape:groupmode='layer']">
+<xsl:element name="svg:filter">
+<xsl:attribute name="id"><xsl:value-of select="concat('filter',generate-id(.))"/></xsl:attribute>
+<xsl:attribute name="filterUnits">objectBoundingBox</xsl:attribute>
+<xsl:attribute name="x">0</xsl:attribute>
+<xsl:attribute name="y">0</xsl:attribute>
+<xsl:attribute name="width">100%</xsl:attribute>
+<xsl:attribute name="height">100%</xsl:attribute>
+
+<xsl:element name="svg:feOffset">
+	<xsl:attribute name="in">SourceGraphic</xsl:attribute>
+	<xsl:attribute name="result">L1</xsl:attribute>
+	<xsl:attribute name="dx"><xsl:value-of select="-1 * position()* $factor"/></xsl:attribute>
+	<xsl:attribute name="dy">0</xsl:attribute>
+</xsl:element>
+
+
+<xsl:element name="svg:feOffset">
+	<xsl:attribute name="in">SourceGraphic</xsl:attribute>
+	<xsl:attribute name="result">R1</xsl:attribute>
+	<xsl:attribute name="dx"><xsl:value-of select="position()* $factor"/></xsl:attribute>
+	<xsl:attribute name="dy">0</xsl:attribute>
+</xsl:element>
+
+
+	  	 <svg:feColorMatrix in="L1" result="L2" type="matrix" values="0.8 0.8 0.8 0.1 0.2
+	      		0.0 1.0 0.0 0.0 0.0
+	      		0.0 0.0 1.0 0.0 0.0
+	      		0.0 0.0 0.0 1.0 0.0
+	      		"/>
+	      	<svg:feColorMatrix in="R1" result="R2" type="matrix" values="0.0 0.0 1.0 0.0 0.0
+	      		0.0 1.0 0.0 0.0 0.0
+	      		0.8 0.8 0.8 0.1 0.2
+	      		0.0 0.0 0.0 1.0 0.0
+	      		"/>
+	  	
+		  <!--
+		 <feMerge>
+		 	<feMergeNode in="R2"/>
+		 	<feMergeNode in="L2"/>
+		 </feMerge>
+		-->
+		 <svg:feComposite operator="arithmetic"
+		 	 in="L2"
+		 	 in2="R2"
+		 	 k1="0" k2="0.5" k3="0.5"
+		 	 />
+		
+</xsl:element>
+</xsl:for-each>
+</xsl:template>
+
+</xsl:stylesheet>
+

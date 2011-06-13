@@ -1,0 +1,93 @@
+<?xml version='1.0'  encoding="UTF-8" ?>
+<xsl:stylesheet
+        xmlns:xsl='http://www.w3.org/1999/XSL/Transform'
+	xmlns:svg="http://www.w3.org/2000/svg"
+	xmlns:h='http://www.w3.org/1999/xhtml'
+	xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+	xmlns="http://www.w3.org/2000/svg"
+        version='1.0'
+        >
+<xsl:output method="xml"/>
+
+<xsl:template match="/svg:svg">
+<svg:svg>
+<xsl:attribute name="onload">init(evt)</xsl:attribute>
+<xsl:attribute name="onmousemove">drag(evt)</xsl:attribute>
+<xsl:copy-of select="@*"/>
+
+<svg:script type="application/ecmascript">
+<xsl:text>var layers=[</xsl:text>
+<xsl:for-each select="svg:g[@inkscape:groupmode='layer']">
+<xsl:if test="position() &gt; 1"><xsl:text>,</xsl:text></xsl:if>
+<xsl:text>{layer:null,ratio:</xsl:text>
+<xsl:value-of select="position()"/>
+<xsl:text>,id:'</xsl:text>
+<xsl:value-of select="@id"/>
+<xsl:text>'}</xsl:text>
+</xsl:for-each>
+<xsl:text>];
+
+var width=</xsl:text><xsl:value-of select="@width"/><xsl:text>;
+var height=</xsl:text><xsl:value-of select="@height"/><xsl:text>;
+
+function init(evt)
+	{
+	for(var i in layers)
+		{
+		layers[i].layer=document.getElementById(layers[i].id);
+		}
+	}
+
+function drag(evt)
+	{
+	var midX= width/2.0;
+	var midY= height/2.0;
+	var maxshift=30;
+	var mouseX=evt.clientX;
+	var mouseY=evt.clientY;
+	if(mouseX &gt; width)
+		{
+		mouseX=width;
+		}
+	if(mouseX &lt; 0)
+		{
+		mouseX=0;
+		}
+	if(mouseY &gt; height)
+		{
+		mouseY=height;
+		}
+	if(mouseY  &lt; 0)
+		{
+		mouseY=0;
+		}
+	
+
+	for(var i in layers)
+		{	
+		var L=layers[i];
+		var shiftX= ((evt.clientX-midX)/(width/2.0))*maxshift;
+		var shiftY= ((evt.clientY-midY)/(height/2.0))*maxshift;
+		L.layer.setAttribute("transform","translate("+
+			(shiftX*(i+1))+","+
+			(shiftY*(i+1))+
+			")");
+		}
+	}
+</xsl:text>
+</svg:script>
+<xsl:apply-templates select="*|text()"/>
+</svg:svg>
+</xsl:template>
+
+
+<xsl:template match="*|text()|@*">
+<xsl:copy>
+<xsl:apply-templates select="@*|*|text()"/>
+</xsl:copy>
+</xsl:template>
+
+
+
+</xsl:stylesheet>
+
