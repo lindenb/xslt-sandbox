@@ -6,6 +6,8 @@
 <xsl:output method="text"/>
 
 <xsl:template match="/">
+import java.util.*;
+import java.util.regex.*;
 
 interface DataType
 	{
@@ -16,6 +18,7 @@ interface OntNode
 	public String getLocalName();
 	public String getLabel();
 	public String getDescription();
+	public Icon getIcon();
 	}
 
 interface OntProperty extends OntNode
@@ -24,6 +27,8 @@ interface OntProperty extends OntNode
 	public boolean isObjectProperty();
 	public int getMinCardinality();
 	public int getMaxCardinality();
+	public DataProperty asDataProperty();
+	public ObjectProperty asObjectProperty();
 	}
 
 interface DataProperty extends OntProperty
@@ -82,6 +87,21 @@ abstract class AbstractOntNode implements OntNode
 		{
 		return getClass().getSimpleName()+"["+getLocalName()+"]";
 		}
+	@Override
+	public DataProperty asDataProperty()
+		{
+		return DataProperty.class.cast(this);
+		}
+	@Override
+	public ObjectProperty asObjectProperty()
+		{
+		return ObjectProperty.class.cast(this);
+		}
+	@Override
+	public Icon getIcon()
+		{
+		return null;
+		}
 	}
 
 abstract class AbstractOntProperty
@@ -132,39 +152,97 @@ abstract class AbstractObjectProperty
 		}
 	}
 
-abstract AbstractOntClass
+abstract class AbstractOntClass
 	extends AbstractOntNode
 	implements  OntClass
 	{
 	
 	}
 
-abstract AbstractDataType implements DataType
+abstract class AbstractDataType implements DataType
 	{
 	
 	}
 
 
-abstract StringDataType
+abstract class StringDataType
 	extends AbstractDataType
 	{
 	public Pattern getPattern()
 		{
 		return null;
 		}
-	@Override
+	
 	public Object parse(String s)
 		{
 		return s;
 		}
 	}
 
+interface Ontology extends Iterable&lt;&lt;OntClass&gt;
+	{
+	public OntClass findClassByName(String s);
+	public List&lt;OntClass&gt; getClasses();
+	}
 
+abstract class AbstractOntology
+	implements Ontology
+	{
+	@Override
+	public OntClass findClassByName(String s)
+		{
+		for(OntClass c:getClasses())
+			{
+			if(c.getLocalName().equals(s)) return c;
+			}
+		return null;
+		}
+	@Override
+	public Iterator&lt;OntClass&gt; iterator()
+		{
+		return getClasses().iterator();
+		}
+	}
+
+abstract class GenericTableModel&lt;T&gt;
+	extends AbstractTableModel
+	{
+	public abstract &lt;T&gt; getItems();
+	@Override
+	public int getRowCount()
+		{
+		return getItems().size();
+		}
+	public T getItemAt(int i)
+		{
+		return getItems().get(i);
+		}
+	
+	public abstract Object getValueOf(T objet,int col);
+	
+	@Override
+	public Object getValueAt(int row,int col)
+		{
+		return getValueOf(getItemAt(row),col);
+		}
+	@Override
+	public boolean isCellEditable(int row,int col)
+		{
+		return false;
+		}
+	}
+
+
+
+
+<xsl:apply-templates select="EModel/EClass"/>
+<xsl:apply-templates select="EModel"/>
 </xsl:template>
 
-<xsl:template match="EDataType">
-<xsl:variable name="className" select="generate-id(.)"/>
-class <xsl:value-of select="$className">DataType
+<xsl:template match="EDataType[not(@type) or @type='string']">
+<xsl:variable name="className"><xsl:apply-templates select=".." mode="localName"/></xsl:variable>
+/** <xsl:value-of select="$className"/>DataType ********************************************************/
+private class <xsl:value-of select="$className"/>DataType
 	extends StringDataType
 	{
 	<xsl:if test="pattern">
@@ -176,7 +254,7 @@ class <xsl:value-of select="$className">DataType
 		}
 	</xsl:if>
 	
-	<xsl:value-of select="$className">DataType()
+	<xsl:value-of select="$className"/>DataType()
 		{
 		<xsl:if test="pattern">
 		int flag=0;
@@ -191,82 +269,119 @@ class <xsl:value-of select="$className">DataType
 		}
 	
 	}
+private <xsl:value-of select="$className"/>DataType dataType = new  <xsl:value-of select="$className"/>DataType();
+
+/*********************************************************************************************************/
+</xsl:template>
+
+<xsl:template match="EDataType">
+<xsl:message terminate="yes">DataType @type not implemented</xsl:message>
 </xsl:template>
 
 <xsl:template match="EAttribute">
-<xsl:variable name="className"><xsl:value-of select="localName"/></xsl:variable>
-class <xsl:value-of select="$className">
-	extends AbstractOntDataProperty
-	{
+<xsl:variable name="className"><xsl:apply-templates select="." mode="localName"/></xsl:variable>
+		/** data property */
+		private class <xsl:value-of select="$className"/>
+			extends AbstractDataProperty
+			{
+			<xsl:apply-templates select="EDataType"/>
+			
+			<xsl:value-of select="$className"/>()
+				{
+				}
 	
-	private DataType dataType=null;
-	<xsl:value-of select="$className">()
-		{
-		}
-	
-	@Override
-	public DataType getRange()
-		{
-		return this.dataType;
-		}
-	
-	<xsl:apply-templates select="@localName"/>
-	<xsl:apply-templates select="@minCardinality"/>
-	<xsl:apply-templates select="@maxCardinality"/>
-	<xsl:apply-templates select="@label"/>
-	<xsl:apply-templates select="@description"/>
-	}
+			@Override
+			public DataType getRange()
+				{
+				return this.dataType;
+				}
+			<xsl:apply-templates select="@ID"/>
+			<xsl:apply-templates select="@localName"/>
+			<xsl:apply-templates select="@minCardinality"/>
+			<xsl:apply-templates select="@maxCardinality"/>
+			<xsl:apply-templates select="@label"/>
+			<xsl:apply-templates select="@description"/>
+			}
+
+		private <xsl:value-of select="$className"/> m_<xsl:value-of select="$className"/>=new <xsl:value-of select="$className"/>();
 </xsl:template>
 
 <xsl:template match="EReference">
-<xsl:variable name="className"><xsl:value-of select="localName"/></xsl:variable>
-class <xsl:value-of select="$className">
-	extends AbstractOntObjectProperty
-	{
-	<xsl:value-of select="$className">()
-		{
-		}
+<xsl:variable name="className"><xsl:apply-templates select="." mode="localName"/></xsl:variable>
+		private class <xsl:value-of select="$className"/>
+			extends AbstractObjectProperty
+			{
+			<xsl:value-of select="$className"/>()
+				{
+				}
 	
-	@Override
-	public OntClass getRange()
-		{
-		return <xsl:value-of select="@range">.getInstance();
-		}
-	<xsl:apply-templates select="@localName"/>
-	<xsl:apply-templates select="@minCardinality"/>
-	<xsl:apply-templates select="@maxCardinality"/>
-	<xsl:apply-templates select="@label"/>
-	<xsl:apply-templates select="@description"/>
-	}
+			@Override
+			public OntClass getRange()
+				{
+				<xsl:if test="not(@range)">
+				  <xsl:message terminate="yes"><xsl:value-of select="$className"/> missing @range</xsl:message>
+				</xsl:if>
+				return <xsl:apply-templates select="@range" mode="localName"/>.getInstance();
+				}
+			<xsl:apply-templates select="@localName"/>
+			<xsl:apply-templates select="@minCardinality"/>
+			<xsl:apply-templates select="@maxCardinality"/>
+			<xsl:apply-templates select="@label"/>
+			<xsl:apply-templates select="@description"/>
+			}
+
+		private <xsl:value-of select="$className"/> m_<xsl:value-of select="$className"/>=new <xsl:value-of select="$className"/>();
 </xsl:template>
 
-<xsl:template match="EClass">
-</xsl:template>
 
 
 <xsl:template match="EClass">
-<xsl:variable name="className"><xsl:value-of select="localName"/></xsl:variable>
-class <xsl:value-of select="$className">
+<xsl:variable name="className"><xsl:apply-templates select="." mode="localName"/></xsl:variable>
+class <xsl:value-of select="$className"/>
 	extends AbstractOntClass
 	{
 	/** singleton */
-	private static final <xsl:value-of select="$className"> INSTANCE=null;
-	private List&lt;OntProperty&gt; properties=new ArrayList&lt;OntProperty&gt;();
+	private static <xsl:value-of select="$className"/> INSTANCE=null;
+	
+	<xsl:apply-templates select="EAttribute|EReference"/>
+	
+	
+	
+	/** properties */
+	private OntProperty[] properties=null;
+	/** ID property */
+	private DataProperty idProperty=null;
+	
 	/** private ctor */
-	private <xsl:value-of select="$className">()
+	private <xsl:value-of select="$className"/>()
 		{
+		properties=new OntProperty[]{
+			<xsl:for-each select="EAttribute|EReference">
+				<xsl:variable name="propName"><xsl:apply-templates select="." mode="localName"/></xsl:variable>
+				<xsl:if test="position()!=1">,</xsl:if>
+				<xsl:value-of select="concat('m_',$propName)"/>
+			</xsl:for-each>
+			};
+		<xsl:if test="count(EAttribute[@ID='true'])!=1">
+			<xsl:message terminate='yes'>ID missing or defined twice for <xsl:value-of select="$className"/></xsl:message>
+		</xsl:if>
+		
+		<xsl:for-each select="EAttribute[@ID='true']">
+		<xsl:variable name="propName"><xsl:apply-templates select="." mode="localName"/></xsl:variable>
+		this.idProperty=<xsl:value-of select="concat('m_',$propName)"/>;
+		</xsl:for-each>
 		}
-	/** prevent cloning */
+		
 	/** get singleton */
-	public static <xsl:value-of select="$className"> getInstance()
+	public static <xsl:value-of select="$className"/> getInstance()
 		{
 		if(INSTANCE==null)
 			{
-			synchronized(<xsl:value-of select="$className">.class)
+			synchronized(<xsl:value-of select="$className"/>.class)
 				{
 				if(INSTANCE==null)
 					{
-					INSTANCE=new <xsl:value-of select="$className">();
+					INSTANCE=new <xsl:value-of select="$className"/>();
 					}
 				}
 			}
@@ -275,7 +390,7 @@ class <xsl:value-of select="$className">
 	@Override
 	public List&lt;OntProperty&gt; getProperties()
 		{
-		return properties;
+		return Arrays.asList(properties);
 		}
 	<xsl:apply-templates select="@localName"/>
 	<xsl:apply-templates select="@label"/>
@@ -284,9 +399,67 @@ class <xsl:value-of select="$className">
 </xsl:template>
 
 
+<xsl:template match="EModel">
+
+/**
+ * OntologyImpl
+ */
+class OntologyImpl extends AbstractOntology
+	{
+	private OntClass classes[];
+	public OntologyImpl()
+		{
+		this.classes=new OntClass[]{
+			<xsl:for-each select="EClass">
+			<xsl:variable name="className"><xsl:apply-templates select="." mode="localName"/></xsl:variable>
+			<xsl:if test="position()!=1">,</xsl:if>
+			<xsl:value-of select="$className"/><xsl:text>.getInstance()
+			</xsl:text>
+			</xsl:for-each>
+			};
+		}
+	
+	
+	@Override
+	public List&lt;OntClass&gt; getClasses()
+		{
+		return Arrays.asList(this.classes);
+		}
+	}
+
+public class jeter
+	{
+	public static void main(String args) throws Exception
+		{
+		
+		}
+	}
+</xsl:template>
+
+<xsl:template match="*|text()|@*" mode="localName">
+<xsl:variable name="s">
+	<xsl:choose>
+	  <xsl:when test="@localName">
+	  	<xsl:value-of select="@localName"/>
+	  </xsl:when>
+	   <xsl:when test="@name">
+	  	<xsl:value-of select="@name"/>
+	  </xsl:when>
+	  <xsl:otherwise>
+	  	<xsl:value-of select="normalize-space(.)"/>
+	  </xsl:otherwise>
+	</xsl:choose>
+</xsl:variable>
+<xsl:call-template name="titleize">
+  <xsl:with-param name="name">
+    <xsl:value-of select="$s"/>
+  </xsl:with-param>
+</xsl:call-template>
+</xsl:template>
+
 <xsl:template match="@localName">
 @Override
-public int getLocalName()
+public String getLocalName()
 	{
 	return <xsl:apply-templates select="." mode="quote"/>;
 	}
@@ -324,6 +497,15 @@ public int getDescription()
 	}
 </xsl:template>	
 
+<xsl:template match="@ID">
+@Override
+public boolean isId()
+	{
+	return <xsl:value-of select="@ID"/>;
+	}
+</xsl:template>	
+
+
 <xsl:template match="*|text()|@*" mode="quote">
 	<xsl:text>&quot;</xsl:text>
 	<xsl:call-template name="escape">
@@ -350,9 +532,10 @@ public int getDescription()
 
 
 <xsl:template name="titleize">
-<xsl:param name="name"/><xsl:value-of select="translate(substring($name,1,1),'ab
-cdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/><xsl:value-of select="
-substring($name,2)"/></xsl:template>
+ <xsl:param name="name"/>
+ <xsl:value-of select="translate(substring($name,1,1),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
+ <xsl:value-of select="substring($name,2)"/>
+</xsl:template>
 
 
 </xsl:stylesheet>
