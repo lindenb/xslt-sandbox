@@ -66,6 +66,7 @@ interface OntClass extends OntNode
 	{
 	public List&lt;OntProperty&gt; getProperties();
 	public Instance parseInstance(XMLEventReader r,StartElement e) throws XMLStreamException;
+	public void writeInstance(XMLStreamWriter w,Instance instance) throws XMLStreamException;
 	}
 
 abstract class AbstractOntNode implements OntNode
@@ -242,6 +243,31 @@ class BigIntegerDataType
 		}
 	}
 
+class BigDecimalDataType
+	extends AbstractDataType
+	{
+	public Object parse(String s)
+		{
+		if(s==null) return null;
+		return new java.math.BigDecimal(s);
+		}
+	@Override
+	public Object parseInstance(XMLEventReader r,StartElement e) throws XMLStreamException
+		{
+		return parse(r.getElementText());
+		}
+	public BigDecimal getMinInclusive()
+		{
+		return null;
+		}
+	
+	public BigDecimal getMaxInclusive()
+		{
+		return null;
+		}
+	}
+
+
 interface Ontology extends Iterable&lt;OntClass&gt;
 	{
 	public OntClass findClassByName(String s);
@@ -270,6 +296,7 @@ abstract class AbstractOntology
 
 interface Instance
 	{
+	public Object get(OntProperty prop);
 	public OntClass getOntClass();
 	public Object getId();
 	}
@@ -277,7 +304,11 @@ interface Instance
 abstract class GenericTableModel&lt;T&gt;
 	extends AbstractTableModel
 	{
-	public abstract List&lt;T&gt; getItems();
+	private List&lt;T&gt; items=new ArrayList&lt;T&gt;();
+	public List&lt;T&gt; getItems()
+		{
+		return this.items;
+		}
 	@Override
 	public int getRowCount()
 		{
@@ -302,7 +333,32 @@ abstract class GenericTableModel&lt;T&gt;
 		}
 	}
 
-
+abstract class SimpleInstanceTableModel&lt;T extends Instance&gt;
+	extends GenericTableModel&lt;T&gt;
+	{
+	SimpleInstanceTableModel()
+		{
+		}
+	public abstract OntClass getOntClass();
+	public abstract List&lt;DataProperty&gt; getDataProperties();
+	@Override
+	public int getColumnCount()
+		{
+		return getDataProperties().size();
+		}
+	@Override
+	public String getColumnName(int col)
+		{
+		return getDataProperties().get(col).getLabel();
+		}
+	
+	@Override
+	public Object getValueOf(Instance objet,int col)
+		{
+		return objet.get(getDataProperties().get(col));
+		}
+		
+	}
 
 class XmlDataStore
 	{
@@ -437,6 +493,44 @@ private <xsl:value-of select="$className"/>DataType dataType = new  <xsl:value-o
 </xsl:template>
 
 
+<xsl:template match="EDataType[@type='decimal']">
+<xsl:variable name="className"><xsl:apply-templates select=".." mode="localName"/></xsl:variable>
+/** <xsl:value-of select="$className"/>DataType ********************************************************/
+private class <xsl:value-of select="$className"/>DataType
+	extends BigDecimalDataType
+	{
+	<xsl:if test="@min">
+	private BigDecimal min_inclusive=new BigDecimal(&quot;<xsl:value-of select="@min"/>&quot;);
+	</xsl:if>
+	<xsl:if test="@max">
+	private BigDecimal max_inclusive=new BigDecimal(&quot;<xsl:value-of select="@max"/>&quot;);
+	</xsl:if>
+	
+	<xsl:value-of select="$className"/>DataType()
+		{
+		
+		}
+	<xsl:if test="@min">
+	@Override
+	public BigInteger getMinInclusive()
+		{
+		return this.min_inclusive;
+		}
+	</xsl:if>
+	
+	<xsl:if test="@max">
+	@Override
+	public BigInteger getMaxInclusive()
+		{
+		return this.max_inclusive;
+		}
+	</xsl:if>
+	}
+private <xsl:value-of select="$className"/>DataType dataType = new  <xsl:value-of select="$className"/>DataType();
+
+/*********************************************************************************************************/
+</xsl:template>
+
 <xsl:template match="EDataType">
 <xsl:message terminate="yes">DataType @type=<xsl:value-of select="@type"/> not implemented</xsl:message>
 </xsl:template>
@@ -517,6 +611,40 @@ class <xsl:value-of select="$className"/>
 	
 	<xsl:apply-templates select="EAttribute|EReference"/>
 	
+	/**
+	 *  InstanceOf<xsl:value-of select="$className"/>TableModel
+	 */ 
+	@SuppressWarnings("serial")
+	private class  InstanceOf<xsl:value-of select="$className"/>TableModel
+		extends	SimpleInstanceTableModel&lt;InstanceOf<xsl:value-of select="$className"/>&gt;
+		{
+		private List&lt;DataProperty&gt; columns=new ArrayList&lt;DataProperty&gt;();
+		InstanceOf<xsl:value-of select="$className"/>TableModel()
+			{
+			for(OntProperty p:<xsl:value-of select="$className"/>.this.getProperties())
+				{
+				if(!p.isDataProperty()) continue;
+				DataProperty dp=p.asDataProperty();
+				if(dp.getMaxCardinality()&gt;1 || dp.getMaxCardinality()==-1) continue;
+				this.columns.add(dp);
+				}
+			}
+		@Override
+		public OntClass getOntClass()
+			{
+			return <xsl:value-of select="$className"/>.this;
+			}
+		@Override
+		public List&lt;DataProperty&gt; getDataProperties()
+			{
+			return this.columns;
+			}
+		}
+	
+	/**
+	 *  Instance
+	 *
+	 */ 
 	private class InstanceOf<xsl:value-of select="$className"/>
 		implements Instance
 		{
@@ -535,14 +663,59 @@ class <xsl:value-of select="$className"/>
 		 	{
 		 	}
 		@Override
+		public Object get(OntProperty property)
+			{
+			<xsl:for-each select="EAttribute|EReference">
+			<xsl:variable name="propName"><xsl:apply-templates select="." mode="localName"/></xsl:variable>
+			<xsl:if test="position()&gt;1">else</xsl:if> if(property==<xsl:value-of select="$className"/>.this.<xsl:value-of select="concat('m_',$propName)"/>)//warning using '==' , not 'equals'
+				{
+				return this.v_<xsl:value-of select="$propName"/>;
+				}
+			</xsl:for-each>
+			throw new IllegalStateException("undefined property "+property.getLocalName());
+			}
+		@Override
 		public Object getId()
 			{
-			return null;
+			return get(<xsl:value-of select="$className"/>.this.idProperty);
 			}
+		
 		@Override
 		public OntClass getOntClass()
 			{
 			return <xsl:value-of select="$className"/>.this;
+			}
+		void write(XMLStreamWriter w) throws XMLStreamException
+			{
+			w.writeStartElement(getOntClass().getLocalName());
+			<xsl:for-each select="EAttribute">
+			<xsl:variable name="propName"><xsl:apply-templates select="." mode="localName"/></xsl:variable>
+			<xsl:choose>
+			  <xsl:when test="not(@maxCardinality) or number(@maxCardinality)&lt;2">
+			  //<xsl:value-of select="$className"/>.this.<xsl:value-of select="concat('m_',$propName)"/>==null
+			  if(this.v_<xsl:value-of select="$propName"/>!=null)
+			  	{
+			  	w.writeStartElement(<xsl:value-of select="$className"/>.this.<xsl:value-of select="concat('m_',$propName)"/>.getLocalName());
+			  	w.writeCharacters(String.valueOf(this.v_<xsl:value-of select="$propName"/>));
+			  	w.writeEndElement();
+			  	}
+			  else
+			  	{
+			  	//TODO write nothing but could be xsi:nil
+			  	}
+			  </xsl:when>
+			  <xsl:otherwise>
+			  for(Object item: v_<xsl:value-of select="$propName"/>)
+		  		{
+		  		w.writeStartElement(<xsl:value-of select="$className"/>.this.<xsl:value-of select="concat('m_',$propName)"/>.getLocalName());
+			  	w.writeCharacters(String.valueOf(o));
+			  	w.writeEndElement();
+		  		}
+			  </xsl:otherwise>
+			</xsl:choose>
+			//TODO reference !!
+			</xsl:for-each>
+			w.writeEndElement();
 			}
 		}
 	
@@ -640,6 +813,12 @@ class <xsl:value-of select="$className"/>
 				}
 			}
 		return instance;
+		}
+	
+	@Override
+	public void writeInstance(XMLStreamWriter w,Instance instance) throws XMLStreamException
+		{
+		InstanceOf<xsl:value-of select="$className"/>.class.cast(instance).write(w);
 		}
 	<xsl:apply-templates select="@localName"/>
 	<xsl:apply-templates select="@label"/>
