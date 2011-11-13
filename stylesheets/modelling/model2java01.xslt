@@ -19,25 +19,43 @@ Usage :
 -->
 <xsl:template match="/">
 import java.util.*;
+import java.awt.image.BufferedImage;
 import java.util.regex.*;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.CardLayout;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.event.*;
 import javax.swing.table.*;
+import javax.swing.border.*;
 import java.io.*;
 import javax.xml.stream.*;
 import javax.xml.stream.events.*;
 import java.math.*;
+import java.net.URL;
 
 interface DataType
 	{
 	public Object parseInstance(XMLEventReader r,StartElement e) throws XMLStreamException;
 	}
-	
-interface OntNode
+
+interface Summary
 	{
-	public String getLocalName();
 	public String getLabel();
 	public String getDescription();
 	public Icon getIcon();
+	}
+
+interface OntNode
+	extends Summary
+	{
+	public String getLocalName();
 	}
 
 interface OntProperty extends OntNode
@@ -71,6 +89,7 @@ interface OntClass extends OntNode
 
 abstract class AbstractOntNode implements OntNode
 	{
+	protected Icon _icon=null;
 	protected AbstractOntNode()
 		{
 		}
@@ -110,10 +129,37 @@ abstract class AbstractOntNode implements OntNode
 		return getClass().getSimpleName()+"["+getLocalName()+"]";
 		}
 	
+	protected static Icon loadIcon(String s)
+		{
+		if(s==null || s.isEmpty()) return null;
+		try
+			{
+			BufferedImage img=null;
+			if(s.startsWith("http://"))
+				{
+				img=ImageIO.read(new URL(s));
+				}
+			else
+				{
+				InputStream in=AbstractOntNode.class.getResourceAsStream(s);
+				if(in!=null)
+					{
+					img=ImageIO.read(in);
+					in.close();
+					}
+				}
+			if(img==null) return null;
+			return new ImageIcon(img);
+			}
+		catch(Exception err)
+			{
+			return null;
+			}
+		}
 	@Override
 	public Icon getIcon()
 		{
-		return null;
+		return _icon;
 		}
 	}
 
@@ -295,16 +341,159 @@ abstract class AbstractOntology
 
 
 interface Instance
+	extends Summary
 	{
 	public Object get(OntProperty prop);
 	public OntClass getOntClass();
 	public Object getId();
 	}
-
-abstract class GenericTableModel&lt;T&gt;
-	extends AbstractTableModel
+	
+abstract class AbstractInstance
+	implements Instance
 	{
-	private List&lt;T&gt; items=new ArrayList&lt;T&gt;();
+	@Override
+	public Icon getIcon()
+		{
+		return getOntClass().getIcon();
+		}
+	@Override
+	public String getLabel()
+		{
+		return null;
+		}
+	@Override
+	public String getDescription()
+		{
+		return null;
+		}
+	@Override
+	public String toString()
+		{
+		return getLabel();
+		}
+	}
+	
+
+interface InstanceFilter
+	{
+	public boolean accept(Instance instance);
+	}
+	
+class OntClassInstanceFilter implements InstanceFilter
+	{
+	private OntClass c;
+	OntClassInstanceFilter(OntClass c)
+		{
+		this.c=c;
+		}
+	@Override
+	public boolean accept(Instance instance)
+		{
+		return this.c== instance.getOntClass();
+		}
+	}
+
+class NotInstanceFilter implements InstanceFilter
+	{
+	private InstanceFilter delegate;
+	NotInstanceFilter(InstanceFilter delegate)
+		{
+		this.delegate=delegate;
+		}
+	@Override
+	public boolean accept(Instance instance)
+		{
+		return ! this.delegate.accept(instance);
+		}
+	}
+
+class LogicalAndInstanceFilter implements InstanceFilter
+	{
+	private InstanceFilter delegates[];
+	LogicalAndInstanceFilter(InstanceFilter...array)
+		{
+		this.delegates=array;
+		}
+	@Override
+	public boolean accept(Instance instance)
+		{
+		for(InstanceFilter f:this.delegates)
+			{
+			if(!f.accept(instance)) return false;
+			}
+		return true;
+		}
+	}
+
+class LogicalOrInstanceFilter implements InstanceFilter
+	{
+	private InstanceFilter delegates[];
+	LogicalOrInstanceFilter(InstanceFilter...array)
+		{
+		this.delegates=array;
+		}
+	@Override
+	public boolean accept(Instance instance)
+		{
+		for(InstanceFilter f:this.delegates)
+			{
+			if(f.accept(instance)) return true;
+			}
+		return false;
+		}
+	}
+	
+class InstanceSearch
+	{
+	private InstanceFilter filter;
+	private int start=0;
+	private int limit=100;
+	public InstanceSearch(InstanceFilter filter,int start,int limit)
+		{
+		this.filter=filter;
+		this.limit=limit;
+		this.start=start;
+		}
+	public InstanceSearch(InstanceFilter filter)
+		{
+		this.filter=filter;
+		}
+	public InstanceFilter getFilter()
+		{
+		if(this.filter==null) this.filter=new InstanceFilter()
+			{
+			@Override
+			public boolean accept(Instance instance)
+				{
+				return true;
+				}
+			};
+		return this.filter;
+		}
+	public int getStart()
+		{
+		return this.start;
+		}
+	public int getLimit()
+		{
+		return this.limit;
+		}
+	}
+
+interface GenericTableModel&lt;T&gt;
+	extends TableModel
+	{
+	/** returns item at index 'i' */
+	public T getItemAt(int i);
+	/** returns value at column 'col' for this object */
+	public Object getValueOf(T objet,int col);
+	}
+
+abstract class AbstractGenericTableModel&lt;T&gt;
+	extends AbstractTableModel
+	implements GenericTableModel&lt;T&gt;
+	{
+	protected List&lt;T&gt; items=new ArrayList&lt;T&gt;();
 	public List&lt;T&gt; getItems()
 		{
 		return this.items;
@@ -314,11 +503,12 @@ abstract class GenericTableModel&lt;T&gt;
 		{
 		return getItems().size();
 		}
+	@Override
 	public T getItemAt(int i)
 		{
 		return getItems().get(i);
 		}
-	
+	@Override
 	public abstract Object getValueOf(T objet,int col);
 	
 	@Override
@@ -333,8 +523,66 @@ abstract class GenericTableModel&lt;T&gt;
 		}
 	}
 
+
+class OntClassTableModel
+	extends AbstractGenericTableModel&lt;OntClass&gt;
+	{
+	public OntClassTableModel(Collection&lt;OntClass&gt; list)
+		{
+		super.items.addAll(list);
+		}
+	
+	@Override
+	public int getColumnCount()
+		{
+		return 3;
+		}
+		
+	@Override
+	public String getColumnName(int col)
+		{
+		switch(col)
+			{
+			case 0: return "Icn";
+			case 1: return "Label";
+			case 2: return "Description";
+			default: return "$"+(col+1);
+			}
+			
+		}
+	
+	@Override
+	public Class&lt;?&gt; getColumnClass(int col)
+		{
+		switch(col)
+			{
+			case 0: return Icon.class;
+			case 1: //through
+			case 2: return String.class;
+			default: return Object.class;
+			}
+			
+		}
+	
+	public Object getValueOf(OntClass c,int col)
+		{
+		if(c==null) return null;
+		switch(col)
+			{
+			case 0: return c.getIcon();
+			case 1: return c.getLabel();
+			case 2: return c.getDescription();
+			default: return null;
+			}
+		}
+	
+	
+	}
+
+
+
 abstract class SimpleInstanceTableModel&lt;T extends Instance&gt;
-	extends GenericTableModel&lt;T&gt;
+	extends AbstractGenericTableModel&lt;T&gt;
 	{
 	SimpleInstanceTableModel()
 		{
@@ -365,11 +613,13 @@ class XmlDataStore
 	private Ontology ontology;
 	private File xmlFile;
 	private XMLInputFactory xmlInputfactory;
+	private XMLOutputFactory xmlOutputfactory;
 	XmlDataStore(Ontology ontology,File xmlFile)
 		{
 		this.ontology=ontology;
 		this.xmlFile=xmlFile;
-		this.xmlInputfactory=XMLInputFactory.newInstance();
+		this.xmlInputfactory = XMLInputFactory.newInstance();
+		this.xmlOutputfactory = XMLOutputFactory.newInstance();
 		}
 	public Ontology getOntology()
 		{
@@ -388,25 +638,111 @@ class XmlDataStore
 		if(ontClass==null) throw new XMLStreamException("Cannot find ontClass "+localName);
 		return ontClass.parseInstance(r,e);
 		}
-	public List&lt;Instance&gt; search() throws IOException,XMLStreamException
+	private void createFile()throws IOException,XMLStreamException
 		{
-		List&lt;Instance&gt; array=new ArrayList&lt;Instance&gt;();
-		FileReader fin=new FileReader(this.xmlFile);
-		XMLEventReader r= this.xmlInputfactory.createXMLEventReader(fin);
-		int depth=-1;
-		while(r.hasNext())
+		FileOutputStream fout=new FileOutputStream(this.xmlFile);
+		XMLStreamWriter w= this.xmlOutputfactory.createXMLStreamWriter( fout,"UTF-8");
+		w.writeStartDocument("UTF-8","1.0");
+		w.writeStartElement(getRootName());
+		w.writeEndElement();
+		w.writeEndDocument();
+		w.flush();
+		fout.flush();
+		fout.close();
+		}
+	public void insert(List&lt;Instance&gt; instances) throws IOException,XMLStreamException
+		{
+		XMLStreamWriter w=null;
+		XMLEventReader r=null;
+		FileReader fin=null;
+		FileOutputStream fout=null;
+		try
 			{
-			XMLEvent evt=r.nextEvent();
-			if(!evt.isStartElement()) continue;	
-			StartElement e=evt.asStartElement();
+			if(!this.xmlFile.exists()) createFile();
 			
-			Instance instance=parseInstance(r,evt.asStartElement());
-			if(instance==null) continue;
-			array.add(instance);
+			File fileout=File.createTempFile("model",".tmp.xml",this.xmlFile.getParentFile());
+			List&lt;Instance&gt; array=new ArrayList&lt;Instance&gt;();
+			
+			
+			fout=new FileOutputStream(fileout);
+			w= this.xmlOutputfactory.createXMLStreamWriter( fout,"UTF-8");
+			fin=new FileReader(this.xmlFile);
+			r= this.xmlInputfactory.createXMLEventReader(fin);
+			
+			int foundIndex=-1;
+			while(r.hasNext())
+				{
+				XMLEvent evt=r.nextEvent();
+				if(evt.isStartDocument())
+					{
+					w.writeStartDocument("UTF-8","1.0");
+					w.writeStartElement(getRootName());
+					}
+				else if(evt.isEndElement())
+					{
+					for(Instance instance:instances)
+						{
+						instance.getOntClass().writeInstance(w,instance);
+						}
+					w.writeEndElement();
+					w.writeEndDocument();
+					w.flush();
+					break;
+					}
+				else if(!evt.isStartElement())
+					{
+					continue;
+					}	
+				StartElement e=evt.asStartElement();
+			
+				Instance instance=parseInstance(r,evt.asStartElement());
+				if(instance==null) continue;
+				
+				}
 			}
-		r.close(); 
-		fin.close();
-		return array;
+		finally
+			{
+			if(r!=null) try { r.close();} catch(Exception err) {} 
+			if(w!=null) try { w.flush();} catch(Exception err) {} 
+			if(w!=null) try { w.close();} catch(Exception err) {} 
+			if(fin!=null) try { fin.close();} catch(Exception err) {} 
+			if(fout!=null) try { fout.flush();} catch(Exception err) {} 
+			if(fout!=null) try { fout.close();} catch(Exception err) {} 
+			}
+		}
+	public List&lt;Instance&gt; search(InstanceSearch search) throws IOException,XMLStreamException
+		{
+		XMLEventReader r=null;
+		FileReader fin=null;
+		try
+			{
+			List&lt;Instance&gt; array=new ArrayList&lt;Instance&gt;();
+			if(!this.xmlFile.exists()) return array;
+			fin=new FileReader(this.xmlFile);
+			r= this.xmlInputfactory.createXMLEventReader(fin);
+			
+			int foundIndex=-1;
+			while(r.hasNext())
+				{
+				XMLEvent evt=r.nextEvent();
+				if(!evt.isStartElement()) continue;	
+				StartElement e=evt.asStartElement();
+			
+				Instance instance=parseInstance(r,evt.asStartElement());
+				if(instance==null) continue;
+				if(!search.getFilter().accept(instance)) continue;
+				foundIndex++;
+				if(foundIndex &lt; search.getStart()) continue;
+				array.add(instance);
+				if(array.size() &gt;= search.getLimit()) break;
+				}
+			return array;
+			}
+		finally
+			{
+			if(r!=null) try { r.close();} catch(Exception err) {} 
+			if(fin!=null) try { fin.close();} catch(Exception err) {} 
+			}
 		}
 	public void close()
 		{
@@ -447,6 +783,68 @@ private class <xsl:value-of select="$className"/>DataType
 		</xsl:if>
 		}
 	
+	}
+private <xsl:value-of select="$className"/>DataType dataType = new  <xsl:value-of select="$className"/>DataType();
+
+/*********************************************************************************************************/
+</xsl:template>
+
+
+<xsl:template match="EDataType[@type='enum']" mode="enum-decl">
+<xsl:variable name="className"><xsl:apply-templates select=".." mode="localName"/></xsl:variable>
+<xsl:if test="count(enum)=0">
+  <xsl:message terminate="yes">No item defined in enumeration</xsl:message>
+</xsl:if>
+
+/** enumeration for <xsl:value-of select="$className"/> */
+enum E_<xsl:value-of select="$className"/>
+	{
+	<xsl:for-each select="enum">
+	<xsl:if test="position()&gt;1">,</xsl:if>
+	<xsl:choose>
+		<xsl:when test="@value">
+		<xsl:value-of select="@value"/>()
+			{
+			@Override
+			public String toString()
+				{
+				return &quot;<xsl:value-of select="."/>&quot;;
+				}
+			}
+		</xsl:when>
+		<xsl:otherwise>
+		  <xsl:value-of select="."/>
+		</xsl:otherwise>
+	</xsl:choose>
+	</xsl:for-each>;
+	}
+</xsl:template>
+
+<xsl:template match="EDataType[@type='enum']">
+<xsl:variable name="className"><xsl:apply-templates select=".." mode="localName"/></xsl:variable>
+<xsl:if test="count(enum)=0">
+  <xsl:message terminate="yes">No item defined in enumeration</xsl:message>
+</xsl:if>
+/***
+ *
+ * <xsl:value-of select="$className"/>DataType
+ *
+ */
+private class <xsl:value-of select="$className"/>DataType
+	extends AbstractDataType
+	{
+	
+	
+	public Object parse(String s)
+		{
+		if(s==null) return null;
+		return E_<xsl:value-of select="$className"/>.valueOf(s);
+		}
+	@Override
+	public Object parseInstance(XMLEventReader r,StartElement e) throws XMLStreamException
+		{
+		return parse(r.getElementText());
+		}
 	}
 private <xsl:value-of select="$className"/>DataType dataType = new  <xsl:value-of select="$className"/>DataType();
 
@@ -554,6 +952,9 @@ private <xsl:value-of select="$className"/>DataType dataType = new  <xsl:value-o
 			
 			<xsl:value-of select="$className"/>()
 				{
+				<xsl:if test="@icon">
+				super._icon=AbstractOntNode.loadIcon(&quot;<xsl:value-of select="@icon"/>&quot;);
+				</xsl:if>
 				}
 	
 			@Override
@@ -579,6 +980,9 @@ private <xsl:value-of select="$className"/>DataType dataType = new  <xsl:value-o
 			{
 			<xsl:value-of select="$className"/>()
 				{
+				<xsl:if test="@icon">
+				super._icon=AbstractOntNode.loadIcon(&quot;<xsl:value-of select="@icon"/>&quot;);
+				</xsl:if>
 				}
 	
 			@Override
@@ -608,6 +1012,9 @@ class <xsl:value-of select="$className"/>
 	{
 	/** singleton */
 	private static <xsl:value-of select="$className"/> INSTANCE=null;
+	
+	<!-- create the enums if needed -->
+	<xsl:apply-templates select="EAttribute/EDataType[@type='enum']" mode="enum-decl"/>
 	
 	<xsl:apply-templates select="EAttribute|EReference"/>
 	
@@ -646,7 +1053,7 @@ class <xsl:value-of select="$className"/>
 	 *
 	 */ 
 	private class InstanceOf<xsl:value-of select="$className"/>
-		implements Instance
+		extends AbstractInstance
 		{
 		<xsl:for-each select="EAttribute|EReference">
 		<xsl:variable name="propName"><xsl:apply-templates select="." mode="localName"/></xsl:variable>
@@ -742,6 +1149,10 @@ class <xsl:value-of select="$className"/>
 		<xsl:variable name="propName"><xsl:apply-templates select="." mode="localName"/></xsl:variable>
 		this.idProperty=<xsl:value-of select="concat('m_',$propName)"/>;
 		</xsl:for-each>
+		
+		<xsl:if test="@icon">
+		super._icon=AbstractOntNode.loadIcon(&quot;<xsl:value-of select="@icon"/>&quot;);
+		</xsl:if>
 		}
 		
 	/** get singleton */
@@ -855,13 +1266,179 @@ class OntologyImpl extends AbstractOntology
 		}
 	}
 
-public class jeter
+@SuppressWarnings("serial")
+class Frame extends JFrame
 	{
-	public static void main(String args) throws Exception
+	private XmlDataStore dataStore;
+	private JPanel contentPane;
+	private Frame(XmlDataStore dataStore)
 		{
+		super("Frame");
+		this.dataStore=dataStore;
+		this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		this.addWindowListener(new WindowAdapter()
+			{
+			@Override
+			public void windowClosing(WindowEvent e)
+				{
+				doMenuClosing();
+				}
+			});
+		this.addWindowListener(new WindowAdapter()
+			{
+			@Override
+			public void windowOpened(WindowEvent e)
+				{
+				JComponent j=createListClassesPane();
+				Frame.this.contentPane.add(j,BorderLayout.CENTER);
+				Frame.this.removeWindowListener(this);
+				}
+			});
 		
+		this.contentPane=new JPanel(new BorderLayout(5,5));
+		this.contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		setContentPane(this.contentPane);
+		
+		
+		JMenuBar bar=new JMenuBar();
+		setJMenuBar(bar);
+		JMenu menu=new JMenu("File");
+		bar.add(menu);
+		AbstractAction action;
+		
+		action=new AbstractAction("Quit")
+			{
+			@Override
+			public void actionPerformed(ActionEvent e)
+				{
+				doMenuClosing();
+				}
+			};
+		menu.add(action);
+		}
+		
+	Ontology getOntology()
+		{
+		return getDataStore(). getOntology();
+		}
+	
+	XmlDataStore getDataStore()
+		{
+		return this.dataStore;
+		}
+	
+	private void doMenuClosing()
+		{
+		this.dataStore.close();
+		this.setVisible(false);
+		this.dispose();
+		}
+	
+	private JComponent createListClassesPane()
+		{
+		JPanel pane=new JPanel(new BorderLayout(5,5));
+		TableModel tm=new OntClassTableModel(getOntology().getClasses());
+		final JTable table=new JTable(tm);
+		JScrollPane scroll=new JScrollPane(table);
+		pane.add(scroll,BorderLayout.CENTER);
+		final AbstractAction action1=new AbstractAction("List Instances")
+			{
+			@Override
+			public void actionPerformed(ActionEvent ae)
+				{
+				int i=table.getSelectedRow();
+				if(i==-1) return;
+				OntClass o=OntClassTableModel.class.cast(table.getModel()).getItemAt(i);
+				JOptionPane.showMessageDialog(table,o);
+				} 
+			};
+		action1.setEnabled(false);
+		final AbstractAction action2=new AbstractAction("New Instance")
+			{
+			@Override
+			public void actionPerformed(ActionEvent ae)
+				{
+				int i=table.getSelectedRow();
+				if(i==-1) return;
+				OntClass o=OntClassTableModel.class.cast(table.getModel()).getItemAt(i);
+				JOptionPane.showMessageDialog(table,o);
+				} 
+			};
+		action2.setEnabled(false);
+		
+		
+		table.getSelectionModel().addListSelectionListener(new ListSelectionListener()
+			{
+			@Override
+			public void valueChanged(ListSelectionEvent e)
+				{
+				action1.setEnabled(table.getSelectedRow()!=-1);
+				action2.setEnabled(table.getSelectedRow()!=-1);
+				}
+			});
+		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		JPanel top=new JPanel(new FlowLayout(FlowLayout.LEADING));
+		pane.add(top,BorderLayout.NORTH);
+		top.add(new JButton(action1));
+		top.add(new JButton(action2));
+		return pane;
+		}
+	
+	
+	public static void main(String[] args) throws Exception
+		{
+		JFrame.setDefaultLookAndFeelDecorated(true);
+		JDialog.setDefaultLookAndFeelDecorated(true);
+		int optind=0;
+		while(optind&lt; args.length)
+			{
+			if(args[optind].equals("-h") ||
+			   args[optind].equals("-help") ||
+			   args[optind].equals("--help"))
+				{
+				System.err.println("Options:");
+				System.err.println(" -h help; This screen.");
+				System.err.println(" -stdin read config from stdin");
+				return;
+				}
+			else if(args[optind].equals("-stdin"))
+				{
+				
+				}
+			else if(args[optind].equals("--"))
+				{
+				optind++;
+				break;
+				}
+			else if(args[optind].startsWith("-"))
+				{
+				System.err.println("Unknown option "+args[optind]);
+				return;
+				}
+			else 
+				{
+				break;
+				}
+			++optind;
+			}
+		
+		Ontology ontology=new OntologyImpl();
+		XmlDataStore dataStore=new XmlDataStore(ontology,new File("/tmp/jeter.xml"));
+		Dimension screen=Toolkit.getDefaultToolkit().getScreenSize();
+		final Frame app=new Frame(dataStore);
+		app.setBounds(50, 50, screen.width-100, screen.height-100);
+		SwingUtilities.invokeAndWait(new Runnable()
+			{
+			@Override
+			public void run()
+				{
+				app.setVisible(true);
+				};
+			});
 		}
 	}
+
+
 </xsl:template>
 
 <xsl:template match="*|text()|@*" mode="localName">
@@ -933,7 +1510,6 @@ public boolean isId()
 	}
 </xsl:template>	
 
-
 <xsl:template match="*|text()|@*" mode="quote">
 	<xsl:text>&quot;</xsl:text>
 	<xsl:call-template name="escape">
@@ -967,3 +1543,4 @@ public boolean isId()
 
 
 </xsl:stylesheet>
+
