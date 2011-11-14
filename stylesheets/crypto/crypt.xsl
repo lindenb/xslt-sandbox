@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="ISO-8859-1" ?>
 <xsl:stylesheet
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:c="http://exslt.org/crypto"
@@ -23,7 +23,7 @@ Example:
 
 -->
 
-  <xsl:output method="xml"/>
+  <xsl:output method="xml" encoding="ASCII"/>
 
   <xsl:param name="password"/>
   <xsl:param name="crypt">true</xsl:param>
@@ -45,7 +45,12 @@ Example:
       </xsl:when>
       <xsl:otherwise>
         <xsl:copy>
-          <xsl:copy-of select="@*[name()!='crypt:crypted']"/>
+           <xsl:for-each select="@*">
+              <xsl:if test="name(.)!='crypt:crypted'">
+                <xsl:copy-of select="."/>
+              </xsl:if>
+           </xsl:for-each>
+          
             <xsl:choose>
               <xsl:when test='$crypt="true"'>
                 <xsl:attribute name="crypt:crypted">true</xsl:attribute>
