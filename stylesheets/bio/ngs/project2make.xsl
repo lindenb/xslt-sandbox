@@ -78,13 +78,14 @@ VARKIT=${HOME}/src/variationtoolkit/bin
 SNPEFF=/usr/local/package/snpEff_2_1b
 DELETEFILE=echo "DELETE-FILE: "
 -->
-LOCKFILE=<xsl:value-of select="concat(generate-id(.),'.lock'"/>
-SQLITEDB=$(OUT)/stats.sqlite
+LOCKFILE=$(OUTDIR)/<xsl:value-of select="concat('_tmp.',generate-id(.),'.lock')"/>
+SQLITEDB=$(OUTDIR)/stats.sqlite
+INDEXED_REFERENCE=$(foreach S,.amb .ann .bwt .pac .sa .fai,$(addsuffix $S,$(REF))) $(addsuffix	.dict,$(basename $(REF)))
 SAMPLES=<xsl:for-each select="sample"><xsl:value-of select="concat(' ',@name)"/></xsl:for-each>
 
 
 <xsl:text>
-.PHONY:indexed_reference bams bams_realigned bams_sorted1 bams_sorted2 bams_merged
+.PHONY: indexed_reference bams bams_realigned  bams_sorted bams_merged bams_unsorted
 
 
 define indexed_bam
@@ -93,13 +94,15 @@ endef
 
 define timedb
 	lockfile $(LOCKFILE)
-	sqlite3 $(SQLITEDB) "create table timeDB if not exists(target text,step text,when text); insert into(target,step,when) values('$(1)','$(2)',date('now'))"
+	sqlite3 $(SQLITEDB) "create table if not exists timeDB(target text,step text,inserted int); insert into timeDB(target,step,inserted) values('$(1)','$(2)',strftime('%s','now'));"
 	rm -f $(LOCKFILE)
 endef
 
 define sizedb
 	lockfile $(LOCKFILE)
-	sqlite3 $(SQLITEDB) "create table sizeDB if not exists(target text,size integer); insert into(target,size) values('$(1)',$(shell ls -l $(1) | cut -d ' ' -f1))"
+	stat -c '%s' "$(1)" |\
+		awk -v f=$(1) '{printf("create table if not exists sizeDB(target text,size int); insert into sizeDB(target,size) values(\"%s\",\"%s\");\n",f,$$1);}' |\
+		sqlite3 $(SQLITEDB) 
 	rm -f $(LOCKFILE)
 endef
 
@@ -141,7 +144,7 @@ endef
 
 all: variations.samtools.snpEff.vcf.gz variations.gatk.snpEff.vcf.gz
 
-indexed_reference: $(foreach S,.amb .ann .bwt .pac .sa .fai,$(addsuffix $S,$(REF))) $(addsuffix	.dict,$(basename $(REF)))
+indexed_reference: $(INDEXED_REFERENCE)
 
 
 
@@ -163,7 +166,9 @@ ensembl.exons.bed:
 #bams:bams$(BAMSUFFIX)
 bams_realigned:</xsl:text><xsl:for-each select="sample"><xsl:apply-templates select="." mode="realigned"/></xsl:for-each><xsl:text>
 bams_markdup: </xsl:text><xsl:for-each select="sample"><xsl:apply-templates select="." mode="markdup"/></xsl:for-each><xsl:text>
-bams_merged: </xsl:text><xsl:for-each select="sample"><xsl:apply-templates select="." mode="merged"/></xsl:for-each>
+bams_merged: </xsl:text><xsl:for-each select="sample"><xsl:apply-templates select="." mode="merged"/></xsl:for-each><xsl:text>
+bams_unsorted: </xsl:text><xsl:for-each select="sample/sequences/pair"><xsl:apply-templates select="." mode="unsorted"/></xsl:for-each><xsl:text>
+bams_sorted: </xsl:text><xsl:for-each select="sample/sequences/pair"><xsl:apply-templates select="." mode="sorted"/></xsl:for-each>
 
 
 variations.samtools.snpEff.vcf.gz: variations.samtools.vcf.gz
@@ -300,8 +305,11 @@ variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:ap
 <xsl:for-each select="sequences/pair">
 
 <xsl:apply-templates select="." mode="sorted"/> : <xsl:apply-templates select="." mode="unsorted"/>
+	$(call timedb,$@,BEGIN)
 	$(SAMTOOLS) sort $&lt; $(basename $@)
 	$(DELETEFILE) $&lt;
+	$(call timedb,$@,END)
+	$(call sizedb,$@)
 
 <xsl:apply-templates select="." mode="unsorted"/> : <xsl:apply-templates select="fastq[@index='1']" mode="fastq"/>
 	<xsl:text> </xsl:text>
@@ -351,7 +359,7 @@ variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:ap
 
 
 
-<xsl:apply-templates select="." mode="sai"/>:<xsl:apply-templates select="." mode="fastq"/><xsl:text> </xsl:text><xsl:apply-templates select="." mode="dir"/> indexed_reference
+<xsl:apply-templates select="." mode="sai"/>:<xsl:apply-templates select="." mode="fastq"/><xsl:text> </xsl:text><xsl:apply-templates select="." mode="dir"/> $(INDEXED_REFERENCE)
 	$(call timedb,$@,BEGIN)
 	$(BWA) aln -t <xsl:value-of select="$bwathreads"/> -f $@ ${REF} $&lt;
 	$(call timedb,$@,END)
