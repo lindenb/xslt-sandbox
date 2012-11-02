@@ -85,7 +85,7 @@ SAMPLES=<xsl:for-each select="sample"><xsl:value-of select="concat(' ',@name)"/>
 
 
 <xsl:text>
-.PHONY: indexed_reference bams bams_realigned  bams_sorted bams_merged bams_unsorted
+.PHONY: indexed_reference bams bams_realigned  bams_sorted bams_merged bams_unsorted bams_recalibrated bams_markdup
 
 
 define indexed_bam
@@ -129,7 +129,7 @@ endef
 		TRUNCATE_NAMES_AT_WHITESPACE=true
 
 .SECONDARY :</xsl:text><xsl:for-each select="sample"> \
-	<xsl:apply-templates select="." mode="markdup"/> <xsl:apply-templates select="." mode="realigned"/> <xsl:apply-templates select="." mode="merged"/>
+	$(call indexed_bam,<xsl:apply-templates select="." mode="markdup"/>) $(call indexed_bam,<xsl:apply-templates select="." mode="realigned"/>) $(call indexed_bam,<xsl:apply-templates select="." mode="merged"/>)
 	<xsl:for-each select="sequences/pair">
 		<xsl:apply-templates select="." mode="sorted"/>
 		<xsl:apply-templates select="." mode="unsorted"/>
@@ -159,6 +159,7 @@ ensembl.exons.bed:
 	 curl -s -d 'query=<![CDATA[<?xml version="1.0" encoding="UTF-8"?><Query virtualSchemaName="default" formatter="TSV" header="0" uniqueRows="0" count="" datasetConfigVersion="0.6" ><Dataset name="hsapiens_gene_ensembl" interface="default" ><Attribute name="chromosome_name" /><Attribute name="exon_chrom_start" /><Attribute name="exon_chrom_end" /></Dataset></Query>]]>' "http://www.biomart.org/biomart/martservice/result" |\
 	grep -v '_' |grep -v 'GL' |grep -v 'MT' |\
 	awk -F '	' '{S=int($$2)-100; if(S&lt;0) S=0; printf("%s\t%d\t%d\n",$$1,S,int($$3)+100);}' |\
+	sort -t '	' -k1,1 -k2,2n -k3,3n |\
 	$(BEDTOOLS)/mergeBed -d 100 -i - &gt; $@
 	
 
@@ -167,6 +168,7 @@ ensembl.exons.bed:
 bams_realigned:</xsl:text><xsl:for-each select="sample"><xsl:apply-templates select="." mode="realigned"/></xsl:for-each><xsl:text>
 bams_markdup: </xsl:text><xsl:for-each select="sample"><xsl:apply-templates select="." mode="markdup"/></xsl:for-each><xsl:text>
 bams_merged: </xsl:text><xsl:for-each select="sample"><xsl:apply-templates select="." mode="merged"/></xsl:for-each><xsl:text>
+bams_recalibrated: </xsl:text><xsl:for-each select="sample"><xsl:apply-templates select="." mode="recal"/></xsl:for-each><xsl:text>
 bams_unsorted: </xsl:text><xsl:for-each select="sample/sequences/pair"><xsl:apply-templates select="." mode="unsorted"/></xsl:for-each><xsl:text>
 bams_sorted: </xsl:text><xsl:for-each select="sample/sequences/pair"><xsl:apply-templates select="." mode="sorted"/></xsl:for-each>
 
@@ -237,29 +239,29 @@ variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:ap
 <xsl:apply-templates select="." mode="recal"/> : $(call indexed_bam,<xsl:apply-templates select="." mode="realigned"/>) ensembl.exons.bed
 	$(call timedb,$@_countCovariates,BEGIN)
 	$(GATK) $(GATKFLAGS) \
-		-T CountCovariates \
+		-T BaseRecalibrator \
 		-R $(REF) \
 		-I $(filter %.bam,$^) \
 		-l INFO \
-		-recalFile $@.recal_data.csv \
+		-o $@.recal_data.grp \
 		-knownSites $(VCFDBSNP) \
 		-L $(filter %.bed,$^) \
 		-cov ReadGroupCovariate \
 		-cov QualityScoreCovariate \
 		-cov CycleCovariate \
-		-cov DinucCovariate
+		-cov ContextCovariate
 	$(call timedb,$@_countCovariates,END)
 	$(call timedb,$@_tableRecalibaration,BEGIN)
 	$(GATK) $(GATKFLAGS) \
-		-T TableRecalibration \
+		-T PrintReads \
 		-R $(REF) \
-		-recalFile $@.recal_data.csv \
+		-BQSR $@.recal_data.grp \
 		-I $(filter %.bam,$^) \
 		-o $@ \
 		-l INFO
 	$(call timedb,$@_tableRecalibaration,END)
 	$(call sizedb,$@)
-	$(DELETEFILE) $&lt; $@.recal_data.csv
+	$(DELETEFILE) $&lt; $@.recal_data.grp
 
 <xsl:apply-templates select="." mode="realigned"/>: $(call indexed_bam,<xsl:apply-templates select="." mode="merged"/>) ensembl.exons.bed
 		$(call timedb,$@_targetcreator,BEGIN)
