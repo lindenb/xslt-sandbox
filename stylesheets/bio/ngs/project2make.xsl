@@ -231,7 +231,7 @@ variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:ap
 	$(call timedb,$@_fixmate,END)
 	$(SAMTOOLS) index $@
 	$(call timedb,$@_validate,BEGIN)
-	$(JAVA)	-jar $(PICARD)/ValidateSamFile.jar TMP_DIR=$(OUTDIR) VALIDATE_INDEX=true I=$@  CREATE_INDEX=true
+	$(JAVA)	-jar $(PICARD)/ValidateSamFile.jar TMP_DIR=$(OUTDIR) VALIDATE_INDEX=true I=$@  CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT
 	$(call timedb,$@_validate,END)
 	$(DELETEFILE) $&lt; $@.metrics 
 	$(call sizedb,$@)
