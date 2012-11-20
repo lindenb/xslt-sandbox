@@ -66,7 +66,7 @@ OUTDIR=../align/_ignore.backup
 
 REF=/commun/data/pubdb/broadinstitute.org/resources/human_g1k_v37.fasta
 JAVA=/usr/bin/java
-GATK=$(JAVA) -jar /usr/local/package/gatk/GenomeAnalysisTK-1.6-13-g91f02df/GenomeAnalysisTK.jar  
+GATK=$(JAVA) -Xmx2g -jar /usr/local/package/gatk/GenomeAnalysisTK-1.6-13-g91f02df/GenomeAnalysisTK.jar  
 SAMTOOLS=/usr/local/package/samtools-0.1.18/samtools
 BCFTOOLS=/usr/local/package/samtools-0.1.18/bcftools/bcftools
 PICARD=/usr/local/package/picard-tools-1.77
@@ -75,7 +75,6 @@ BWA=/usr/local/package/bwa-0.6.1/bwa
 VCFDBSNP=/commun/data/pubdb/ncbi/_ignore.backup/snp/00-All.vcf.gz
 BAMSUFFIX=_realigned
 VARKIT=${HOME}/src/variationtoolkit/bin
-SNPEFF=/usr/local/package/snpEff_2_1b
 DELETEFILE=echo "DELETE-FILE: "
 -->
 LOCKFILE=$(OUTDIR)/<xsl:value-of select="concat('_tmp.',generate-id(.),'.lock')"/>
@@ -85,17 +84,32 @@ SAMPLES=<xsl:for-each select="sample"><xsl:value-of select="concat(' ',@name)"/>
 
 
 <xsl:text>
-.PHONY: indexed_reference bams bams_realigned  bams_sorted bams_merged bams_unsorted bams_recalibrated bams_markdup
+.PHONY: indexed_reference bams bams_realigned  bams_sorted bams_merged bams_unsorted bams_recalibrated bams_markdup coverage
 
 
 define indexed_bam
     $(1) $(addsuffix .bai,$(filter %.bam,$(1)))
 endef
 
-define timedb
+define timebegindb
 	lockfile $(LOCKFILE)
-	sqlite3 $(SQLITEDB) "create table if not exists timeDB(target text,step text,inserted int); insert into timeDB(target,step,inserted) values('$(1)','$(2)',strftime('%s','now'));"
+	sqlite3 $(SQLITEDB) "create table if not exists timeBeginDB(target text UNIQUE NOT NULL,inserted int); insert OR REPLACE into timeBeginDB(target,inserted) values('$(1)',strftime('%s','now'));"
 	rm -f $(LOCKFILE)
+endef
+
+define timeenddb
+	lockfile $(LOCKFILE)
+	sqlite3 $(SQLITEDB) "create table if not exists timeEndDB(target text UNIQUE NOT NULL,inserted int); insert OR REPLACE into timeEndDB(target,inserted) values('$(1)',strftime('%s','now'));"
+	rm -f $(LOCKFILE)
+endef
+
+
+define timedb
+ifeq ($(2),BEGIN)
+	$(call timebegindb,$(1))
+else
+	$(call timeenddb,$(1))
+endif
 endef
 
 define sizedb
@@ -110,9 +124,9 @@ endef
 
 
 %.bam.bai: %.bam
-	$(call timedb,$@,BEGIN)
+	$(call timebegindb,$@)
 	$(SAMTOOLS) index $&lt;
-	$(call timedb,$@,END)
+	$(call timeenddb,$@)
 	$(call sizedb,$@)
 
 %.amb %.ann %.bwt %.pac %.sa : %.fasta
@@ -142,15 +156,12 @@ endef
 
 <xsl:text>
 
-all: variations.samtools.snpEff.vcf.gz variations.gatk.snpEff.vcf.gz
+all: $(OUTDIR)/variations.samtools.snpEff.vcf.gz $(OUTDIR)/variations.gatk.snpEff.vcf.gz
 
 indexed_reference: $(INDEXED_REFERENCE)
 
 
 
-#coverage: ensembl.exons.bed $(foreach S,$(SAMPLES),$(OUTDIR)/$(S)$(BAMSUFFIX).bam)
-#	$(GATK) -T DepthOfCoverage -o $(basename $@) -S SILENT -L $&lt; $(foreach S,$(SAMPLES),-I ,$(OUTDIR)/$(S)$(BAMSUFFIX).bam) -R $(REF) \
-#		--summaryCoverageThreshold 5
 
 #coverage.tsv : ensembl.exons.bed  $(foreach S,$(SAMPLES),$(OUTDIR)/$(S)$(BAMSUFFIX).bam )
 #	${VARKIT}/beddepth $(foreach S,$(SAMPLES),-f $(OUTDIR)/$(S)$(BAMSUFFIX).bam ) &lt; $&lt; &gt; $@
@@ -173,26 +184,42 @@ bams_unsorted: </xsl:text><xsl:for-each select="sample/sequences/pair"><xsl:appl
 bams_sorted: </xsl:text><xsl:for-each select="sample/sequences/pair"><xsl:apply-templates select="." mode="sorted"/></xsl:for-each>
 
 
-variations.samtools.snpEff.vcf.gz: variations.samtools.vcf.gz
+coverage: $(call indexed_bam,<xsl:for-each select="sample"><xsl:apply-templates select="." mode="markdup"/></xsl:for-each>) ensembl.exons.bed
+	$(call timebegindb,$@)
+	$(GATK) $(GATKFLAGS) \
+		-R $(REF) \
+		-T DepthOfCoverage \
+		-L $(filter %.bed,$^) \
+		-S SILENT \
+		-omitBaseOutput \
+		--summaryCoverageThreshold 5 \
+		$(foreach B,$(filter %.bam,$^), -I $B ) \
+		-o $(OUTDIR)/$(basename $@)
+	$(call timeendb,$@)
+
+
+$(OUTDIR)/variations.samtools.snpEff.vcf.gz: $(OUTDIR)/variations.samtools.vcf.gz
 	gunzip -c  $&lt; |\
 	egrep -v '^GL' |\
-	$(JAVA) -jar $(SNPEFF)/snpEff.jar eff -i vcf -o vcf -c $(SNPEFF)/snpEff.config  hg19 |\
+	$(JAVA) -jar $(SNPEFF)/snpEff.jar eff -i vcf -o vcf -c $(SNPEFF)/snpEff.config  $(SNPEFFBUILD) |\
 	$(SNPEFF)/scripts/vcfEffOnePerLine.pl |\
 	gzip &gt; $@
 
-variations.samtools.vcf.gz: <xsl:for-each select="sample"><xsl:apply-templates select="." mode="markdup"/></xsl:for-each>
-	$(SAMTOOLS) mpileup -uD -q 30 -f $(REF) $^ |\
+$(OUTDIR)/variations.samtools.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:apply-templates select="." mode="markdup"/></xsl:for-each>)
+	$(call timebegindb,$@)
+	$(SAMTOOLS) mpileup -uD -q 30 -f $(REF) $(filter %.bam,$^) |\
 	$(BCFTOOLS) view -vcg - | gzip --best &gt; $@
+	$(call timeenddb,$@)
 
-variations.gatk.snpEff.vcf.gz: variations.gatk.vcf.gz
+$(OUTDIR)/variations.gatk.snpEff.vcf.gz: $(OUTDIR)/variations.gatk.vcf.gz
 	gunzip -c  $&lt; |\
 	egrep -v '^GL' |\
-	$(JAVA) -jar $(SNPEFF)/snpEff.jar eff -i vcf -o vcf -c $(SNPEFF)/snpEff.config  hg19 |\
+	$(JAVA) -jar $(SNPEFF)/snpEff.jar eff -i vcf -o vcf -c $(SNPEFF)/snpEff.config  $(SNPEFFBUILD) |\
 	$(SNPEFF)/scripts/vcfEffOnePerLine.pl |\
 	gzip &gt; $@
 
-variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:apply-templates select="." mode="markdup"/></xsl:for-each>)
-	$(call timedb,$@,BEGIN)
+$(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:apply-templates select="." mode="markdup"/></xsl:for-each>)
+	$(call timebegindb,$@)
 	$(GATK) $(GATKFLAGS) \
 		-R $(REF) \
 		-T UnifiedGenotyper \
@@ -202,7 +229,7 @@ variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:ap
 		--dbsnp $(VCFDBSNP) \
 		-o $(basename $@)
 	gzip --best $(basename $@)
-	$(call timedb,$@,END)
+	$(call timeendb,$@)
 	$(call sizedb,$@)
 
 
@@ -217,27 +244,28 @@ variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:ap
 
 
 <xsl:apply-templates select="." mode="markdup"/> : $(call indexed_bam,<xsl:apply-templates select="." mode="recal"/>)
-	$(call timedb,$@_markdup,BEGIN)
-	$(JAVA) -jar $(PICARD)/MarkDuplicates.jar \
+	$(call timebegindb,$@_markdup)
+	$(JAVA)  -Xmx2g -jar $(PICARD)/MarkDuplicates.jar \
 		TMP_DIR=$(OUTDIR) \
 		INPUT=$(filter %.bam,$^) \
 		O=$@ \
+		MAX_FILE_HANDLES=400 \
 		M=$@.metrics \
 		AS=true \
 		VALIDATION_STRINGENCY=SILENT
-	$(call timedb,$@_markdup,END)
-	$(call timedb,$@_fixmate,BEGIN)
-	$(JAVA) -jar $(PICARD)/FixMateInformation.jar  TMP_DIR=$(OUTDIR) INPUT=$@  
-	$(call timedb,$@_fixmate,END)
-	$(SAMTOOLS) index $@
-	$(call timedb,$@_validate,BEGIN)
-	$(JAVA)	-jar $(PICARD)/ValidateSamFile.jar TMP_DIR=$(OUTDIR) VALIDATE_INDEX=true I=$@  CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT
-	$(call timedb,$@_validate,END)
+	$(call timeenddb,$@_markdup)
+	#$(call timebegindb,$@_fixmate)
+	#$(JAVA) -jar $(PICARD)/FixMateInformation.jar  TMP_DIR=$(OUTDIR) INPUT=$@  VALIDATION_STRINGENCY=SILENT
+	#$(call timendedb,$@_fixmate)
+	#$(SAMTOOLS) index $@
+	#$(call timebegindb,$@_validate)
+	#$(JAVA)	-jar $(PICARD)/ValidateSamFile.jar TMP_DIR=$(OUTDIR) VALIDATE_INDEX=true I=$@  CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT IGNORE_WARNINGS=true
+	#$(call timeenddb,$@_validate)
 	$(DELETEFILE) $&lt; $@.metrics 
 	$(call sizedb,$@)
 
 <xsl:apply-templates select="." mode="recal"/> : $(call indexed_bam,<xsl:apply-templates select="." mode="realigned"/>) ensembl.exons.bed
-	$(call timedb,$@_countCovariates,BEGIN)
+	$(call timebegindb,$@_countCovariates)
 	$(GATK) $(GATKFLAGS) \
 		-T BaseRecalibrator \
 		-R $(REF) \
@@ -250,8 +278,8 @@ variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:ap
 		-cov QualityScoreCovariate \
 		-cov CycleCovariate \
 		-cov ContextCovariate
-	$(call timedb,$@_countCovariates,END)
-	$(call timedb,$@_tableRecalibaration,BEGIN)
+	$(call timeenddb,$@_countCovariates)
+	$(call timebegindb,$@_tableRecalibaration)
 	$(GATK) $(GATKFLAGS) \
 		-T PrintReads \
 		-R $(REF) \
@@ -259,12 +287,12 @@ variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:ap
 		-I $(filter %.bam,$^) \
 		-o $@ \
 		-l INFO
-	$(call timedb,$@_tableRecalibaration,END)
+	$(call timeenddb,$@_tableRecalibaration)
 	$(call sizedb,$@)
 	$(DELETEFILE) $&lt; $@.recal_data.grp
 
 <xsl:apply-templates select="." mode="realigned"/>: $(call indexed_bam,<xsl:apply-templates select="." mode="merged"/>) ensembl.exons.bed
-		$(call timedb,$@_targetcreator,BEGIN)
+		$(call timebegindb,$@_targetcreator)
 		$(GATK) $(GATKFLAGS) \
 			-T RealignerTargetCreator \
   			-R $(REF) \
@@ -273,8 +301,8 @@ variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:ap
 			-S SILENT \
   			-o $&lt;.intervals \
 			--known $(VCFDBSNP)
-		$(call timedb,$@_targetcreator,END)
-		$(call timedb,$@_indelrealigner,BEGIN)
+		$(call timebegindb,$@_targetcreator)
+		$(call timeenddb,$@_indelrealigner)
 		$(GATK) $(GATKFLAGS) \
   			-T IndelRealigner \
   			-R $(REF) \
@@ -283,7 +311,7 @@ variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:ap
   			-o $@ \
   			-targetIntervals $&lt;.intervals \
 			--knownAlleles $(VCFDBSNP)
-		$(call timedb,$@_indelrealigner,BEGIN)
+		$(call timeenddb,$@_indelrealigner)
 		$(call sizedb,$@)
 		$(DELETEFILE) $&lt; $&lt;.intervals
 
