@@ -84,11 +84,12 @@ SAMPLES=<xsl:for-each select="sample"><xsl:value-of select="concat(' ',@name)"/>
 
 
 <xsl:text>
-.PHONY: indexed_reference bams bams_realigned  bams_sorted bams_merged bams_unsorted bams_recalibrated bams_markdup coverage
+.PHONY: indexed_reference bams bams_realigned  bams_sorted bams_merged bams_unsorted bams_recalibrated bams_markdup \
+	coverage toptarget
 
 
 define indexed_bam
-    $(1) $(addsuffix .bai,$(filter %.bam,$(1)))
+    $(1) $(foreach B,$(filter %.bam,$(1)),  $(addsuffix .bai,$B) )
 endef
 
 define timebegindb
@@ -104,14 +105,6 @@ define timeenddb
 endef
 
 
-define timedb
-ifeq ($(2),BEGIN)
-	$(call timebegindb,$(1))
-else
-	$(call timeenddb,$(1))
-endif
-endef
-
 define sizedb
 	lockfile $(LOCKFILE)
 	stat -c '%s' "$(1)" |\
@@ -122,12 +115,14 @@ endef
 
 
 
-
-%.bam.bai: %.bam
-	$(call timebegindb,$@)
-	$(SAMTOOLS) index $&lt;
-	$(call timeenddb,$@)
-	$(call sizedb,$@)
+# doesn't work with qmake
+#
+#%.bai: %.bam
+#	$(call timebegindb,$@)
+#	$(SAMTOOLS) index $&lt;
+#	$(call timeenddb,$@)
+#	$(call sizedb,$@)
+#
 
 %.amb %.ann %.bwt %.pac %.sa : %.fasta
 	$(BWA) index -a bwtsw $&lt; 
@@ -143,8 +138,9 @@ endef
 		TRUNCATE_NAMES_AT_WHITESPACE=true
 
 .SECONDARY :</xsl:text><xsl:for-each select="sample"> \
-	$(call indexed_bam,<xsl:apply-templates select="." mode="markdup"/>) $(call indexed_bam,<xsl:apply-templates select="." mode="realigned"/>) $(call indexed_bam,<xsl:apply-templates select="." mode="merged"/>)
-	<xsl:for-each select="sequences/pair">
+	$(call indexed_bam,<xsl:apply-templates select="." mode="markdup"/>) \
+	$(call indexed_bam,<xsl:apply-templates select="." mode="realigned"/>) \
+	$(call indexed_bam,<xsl:apply-templates select="." mode="merged"/>) <xsl:for-each select="sequences/pair">
 		<xsl:apply-templates select="." mode="sorted"/>
 		<xsl:apply-templates select="." mode="unsorted"/>
 		<xsl:for-each select="fastq">
@@ -155,6 +151,9 @@ endef
 	</xsl:for-each>
 
 <xsl:text>
+
+toptarget:
+	echo "This is the top target. Please select a specific target"
 
 all: $(OUTDIR)/variations.samtools.snpEff.vcf.gz $(OUTDIR)/variations.gatk.snpEff.vcf.gz
 
@@ -181,21 +180,10 @@ bams_markdup: </xsl:text><xsl:for-each select="sample"><xsl:apply-templates sele
 bams_merged: </xsl:text><xsl:for-each select="sample"><xsl:apply-templates select="." mode="merged"/></xsl:for-each><xsl:text>
 bams_recalibrated: </xsl:text><xsl:for-each select="sample"><xsl:apply-templates select="." mode="recal"/></xsl:for-each><xsl:text>
 bams_unsorted: </xsl:text><xsl:for-each select="sample/sequences/pair"><xsl:apply-templates select="." mode="unsorted"/></xsl:for-each><xsl:text>
-bams_sorted: </xsl:text><xsl:for-each select="sample/sequences/pair"><xsl:apply-templates select="." mode="sorted"/></xsl:for-each>
+bams_sorted: </xsl:text><xsl:for-each select="sample/sequences/pair"><xsl:apply-templates select="." mode="sorted"/></xsl:for-each><xsl:text>
+coverage: </xsl:text><xsl:for-each select="sample"><xsl:apply-templates select="." mode="coverage"/></xsl:for-each>
 
 
-coverage: $(call indexed_bam,<xsl:for-each select="sample"><xsl:apply-templates select="." mode="markdup"/></xsl:for-each>) ensembl.exons.bed
-	$(call timebegindb,$@)
-	$(GATK) $(GATKFLAGS) \
-		-R $(REF) \
-		-T DepthOfCoverage \
-		-L $(filter %.bed,$^) \
-		-S SILENT \
-		-omitBaseOutput \
-		--summaryCoverageThreshold 5 \
-		$(foreach B,$(filter %.bam,$^), -I $B ) \
-		-o $(OUTDIR)/$(basename $@)
-	$(call timeendb,$@)
 
 
 $(OUTDIR)/variations.samtools.snpEff.vcf.gz: $(OUTDIR)/variations.samtools.vcf.gz
@@ -205,7 +193,7 @@ $(OUTDIR)/variations.samtools.snpEff.vcf.gz: $(OUTDIR)/variations.samtools.vcf.g
 	$(SNPEFF)/scripts/vcfEffOnePerLine.pl |\
 	gzip &gt; $@
 
-$(OUTDIR)/variations.samtools.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:apply-templates select="." mode="markdup"/></xsl:for-each>)
+$(OUTDIR)/variations.samtools.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:apply-templates select="." mode="recal"/></xsl:for-each>)
 	$(call timebegindb,$@)
 	$(SAMTOOLS) mpileup -uD -q 30 -f $(REF) $(filter %.bam,$^) |\
 	$(BCFTOOLS) view -vcg - | gzip --best &gt; $@
@@ -218,9 +206,9 @@ $(OUTDIR)/variations.gatk.snpEff.vcf.gz: $(OUTDIR)/variations.gatk.vcf.gz
 	$(SNPEFF)/scripts/vcfEffOnePerLine.pl |\
 	gzip &gt; $@
 
-$(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:apply-templates select="." mode="markdup"/></xsl:for-each>)
+$(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sample"><xsl:apply-templates select="." mode="recal"/></xsl:for-each>)
 	$(call timebegindb,$@)
-	$(GATK) $(GATKFLAGS) \
+	$(JAVA) $(GATK.jvm) -jar $(GATK.jar) $(GATK.flags) \
 		-R $(REF) \
 		-T UnifiedGenotyper \
 		-glm BOTH \
@@ -237,15 +225,56 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 
 <xsl:for-each select="sample">
 
+<xsl:apply-templates select="." mode="coverage"/>: $(call indexed_bam,<xsl:apply-templates select="." mode="recal"/>) ensembl.exons.bed
+	$(call timebegindb,$@)
+	$(JAVA) $(GATK.jvm) -jar $(GATK.jar) $(GATK.flags) \
+		-R $(REF) \
+		-T DepthOfCoverage \
+		-L $(filter %.bed,$^) \
+		-S SILENT \
+		-omitBaseOutput \
+		--summaryCoverageThreshold 5 \
+		-I $(filter %.bam,$^) \
+		-o $@
+	$(call timeendb,$@)
+
+
 
 <xsl:apply-templates select="." mode="dir"/>:
 	mkdir -p $@
 
 
+<xsl:call-template name="make.bai">
+ <xsl:with-param name="bam">
+  <xsl:apply-templates select="." mode="realigned"/>
+ </xsl:with-param>
+</xsl:call-template>
 
-<xsl:apply-templates select="." mode="markdup"/> : $(call indexed_bam,<xsl:apply-templates select="." mode="recal"/>)
+<xsl:call-template name="make.bai">
+ <xsl:with-param name="bam">
+  <xsl:apply-templates select="." mode="markdup"/>
+ </xsl:with-param>
+</xsl:call-template>
+
+<xsl:if test="count(sequences/pair)&gt;1">
+<xsl:call-template name="make.bai">
+ <xsl:with-param name="bam">
+  <xsl:apply-templates select="." mode="merged"/>
+ </xsl:with-param>
+</xsl:call-template>
+</xsl:if>
+
+<xsl:call-template name="make.bai">
+ <xsl:with-param name="bam">
+  <xsl:apply-templates select="." mode="recal"/>
+ </xsl:with-param>
+</xsl:call-template>
+
+
+
+<xsl:apply-templates select="." mode="markdup"/> : $(call indexed_bam,<xsl:apply-templates select="." mode="realigned"/>)
 	$(call timebegindb,$@_markdup)
-	$(JAVA)  -Xmx2g -jar $(PICARD)/MarkDuplicates.jar \
+	$(JAVA) $(PICARD.jvm) -jar $(PICARD)/MarkDuplicates.jar \
 		TMP_DIR=$(OUTDIR) \
 		INPUT=$(filter %.bam,$^) \
 		O=$@ \
@@ -255,18 +284,21 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 		VALIDATION_STRINGENCY=SILENT
 	$(call timeenddb,$@_markdup)
 	#$(call timebegindb,$@_fixmate)
-	#$(JAVA) -jar $(PICARD)/FixMateInformation.jar  TMP_DIR=$(OUTDIR) INPUT=$@  VALIDATION_STRINGENCY=SILENT
+	#$(JAVA) $(PICARD.jvm) -jar $(PICARD)/FixMateInformation.jar  TMP_DIR=$(OUTDIR) INPUT=$@  VALIDATION_STRINGENCY=SILENT
 	#$(call timendedb,$@_fixmate)
 	#$(SAMTOOLS) index $@
 	#$(call timebegindb,$@_validate)
-	#$(JAVA)	-jar $(PICARD)/ValidateSamFile.jar TMP_DIR=$(OUTDIR) VALIDATE_INDEX=true I=$@  CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT IGNORE_WARNINGS=true
+	#$(JAVA) $(PICARD.jvm) -jar $(PICARD)/ValidateSamFile.jar TMP_DIR=$(OUTDIR) VALIDATE_INDEX=true I=$@  CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT IGNORE_WARNINGS=true
 	#$(call timeenddb,$@_validate)
 	$(DELETEFILE) $&lt; $@.metrics 
 	$(call sizedb,$@)
 
-<xsl:apply-templates select="." mode="recal"/> : $(call indexed_bam,<xsl:apply-templates select="." mode="realigned"/>) ensembl.exons.bed
+
+
+
+<xsl:apply-templates select="." mode="recal"/> : $(call indexed_bam,<xsl:apply-templates select="." mode="markdup"/>) ensembl.exons.bed
 	$(call timebegindb,$@_countCovariates)
-	$(GATK) $(GATKFLAGS) \
+	$(JAVA) $(GATK.jvm) -jar $(GATK.jar) $(GATK.flags) \
 		-T BaseRecalibrator \
 		-R $(REF) \
 		-I $(filter %.bam,$^) \
@@ -280,7 +312,7 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 		-cov ContextCovariate
 	$(call timeenddb,$@_countCovariates)
 	$(call timebegindb,$@_tableRecalibaration)
-	$(GATK) $(GATKFLAGS) \
+	$(JAVA) $(GATK.jvm) -jar $(GATK.jar) $(GATK.flags) \
 		-T PrintReads \
 		-R $(REF) \
 		-BQSR $@.recal_data.grp \
@@ -293,7 +325,7 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 
 <xsl:apply-templates select="." mode="realigned"/>: $(call indexed_bam,<xsl:apply-templates select="." mode="merged"/>) ensembl.exons.bed
 		$(call timebegindb,$@_targetcreator)
-		$(GATK) $(GATKFLAGS) \
+		$(JAVA) $(GATK.jvm) -jar $(GATK.jar) $(GATK.flags) \
 			-T RealignerTargetCreator \
   			-R $(REF) \
 			-L $(filter %.bed,$^) \
@@ -303,7 +335,7 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 			--known $(VCFDBSNP)
 		$(call timebegindb,$@_targetcreator)
 		$(call timeenddb,$@_indelrealigner)
-		$(GATK) $(GATKFLAGS) \
+		$(JAVA) $(GATK.jvm) -jar  $(GATK.jar) $(GATK.flags) \
   			-T IndelRealigner \
   			-R $(REF) \
   			-I $(filter %.bam,$^) \
@@ -322,23 +354,30 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 
 <xsl:if test="count(sequences/pair)&gt;1">
 <xsl:apply-templates select="." mode="merged"/> : <xsl:for-each select="sequences/pair"><xsl:apply-templates select="." mode="sorted"/></xsl:for-each>
-	$(call timedb,$@,BEGIN)
+	$(call timebegindb,$@)
 	$(JAVA) -jar $(PICARD)/MergeSamFiles.jar O=$@ AS=true \
 		VALIDATION_STRINGENCY=SILENT COMMENT="Merged from $^" \
 		$(foreach B,$^, I=$(B) )
 	$(DELETEFILE) $^
-	$(call timedb,$@,END)
+	$(call timeenddb,$@)
 	$(call sizedb,$@)
 
 </xsl:if>
 
 <xsl:for-each select="sequences/pair">
 
+<xsl:call-template name="make.bai">
+ <xsl:with-param name="bam">
+  <xsl:apply-templates select="." mode="sorted"/>
+ </xsl:with-param>
+</xsl:call-template>
+
+
 <xsl:apply-templates select="." mode="sorted"/> : <xsl:apply-templates select="." mode="unsorted"/>
-	$(call timedb,$@,BEGIN)
+	$(call timebegindb,$@)
 	$(SAMTOOLS) sort $&lt; $(basename $@)
 	$(DELETEFILE) $&lt;
-	$(call timedb,$@,END)
+	$(call timeenddb,$@)
 	$(call sizedb,$@)
 
 <xsl:apply-templates select="." mode="unsorted"/> : <xsl:apply-templates select="fastq[@index='1']" mode="fastq"/>
@@ -348,8 +387,8 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 	<xsl:apply-templates select="fastq[@index='1']" mode="sai"/>
 	<xsl:text> </xsl:text>
 	<xsl:apply-templates select="fastq[@index='2']" mode="sai"/>
-	$(call timedb,$@,BEGIN)
-	$(BWA) sampe -a <xsl:value-of select="$fragmentsize"/> ${REF} \
+	$(call timebegindb,$@)
+	$(BWA) sampe -a <xsl:apply-templates select="." mode="fragmentSize"/> ${REF} \
 		-r "@RG	ID:<xsl:value-of select="generate-id(.)"/>	LB:<xsl:value-of select="../../@name"/>	SM:<xsl:value-of select="../../@name"/>	PL:ILLUMINA" \
 		<xsl:apply-templates select="fastq[@index='1']" mode="sai"/> \
 		<xsl:apply-templates select="fastq[@index='2']" mode="sai"/> \
@@ -362,7 +401,7 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 			<xsl:apply-templates select="." mode="fastq"/>
 		</xsl:if>
 	</xsl:for-each> 
-	$(call timedb,$@,END)
+	$(call timeenddb,$@)
 	$(call sizedb,$@)
 
 
@@ -390,9 +429,9 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 
 
 <xsl:apply-templates select="." mode="sai"/>:<xsl:apply-templates select="." mode="fastq"/><xsl:text> </xsl:text><xsl:apply-templates select="." mode="dir"/> $(INDEXED_REFERENCE)
-	$(call timedb,$@,BEGIN)
+	$(call timebegindb,$@)
 	$(BWA) aln -t <xsl:value-of select="$bwathreads"/> -f $@ ${REF} $&lt;
-	$(call timedb,$@,END)
+	$(call timeenddb,$@)
 	$(call sizedb,$@)
 
 </xsl:for-each>
@@ -424,6 +463,14 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 <xsl:text>$(OUTDIR)/</xsl:text><xsl:value-of select="concat(../../../@name,'/$(TMPREFIX)',$p,'_',@index,'.sai ')"/>
 </xsl:template>
 
+<xsl:template match="pair" mode="fragmentSize">
+<xsl:choose>
+  <xsl:when test="@fragmentSize"><xsl:value-of select="@fragmentSize"/></xsl:when>
+  <xsl:when test="/project/fragmentSize"><xsl:value-of select="/project/fragmentSize"/></xsl:when>
+  <xsl:otherwise>500</xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+
 <xsl:template match="pair" mode="sorted">
 <xsl:variable name="p"><xsl:apply-templates select="." mode="pairname"/></xsl:variable>
 <xsl:text>$(OUTDIR)/</xsl:text><xsl:value-of select="concat(../../@name,'/$(TMPREFIX)',$p,'_sorted.bam ')"/>
@@ -436,7 +483,7 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 	<xsl:value-of select="concat('/$(TMPREFIX)',@name,'_merged.bam ')"/>
 </xsl:when>
 <xsl:otherwise>
-	<xsl:apply-templates select="." mode="sorted"/>
+	<xsl:apply-templates select="sequences/pair[1]" mode="sorted"/>
 </xsl:otherwise>
 </xsl:choose>
 </xsl:template>
@@ -460,10 +507,11 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 </xsl:template>
 
 
-<xsl:template match="sample" mode="realigned">
+<xsl:template match="sample" mode="coverage">
 <xsl:apply-templates select="." mode="dir"/>
-<xsl:value-of select="concat('/',@name,'_realigned.bam ')"/>
+<xsl:value-of select="concat('/',@name,'_coverage ')"/>
 </xsl:template>
+
 
 <xsl:template match="sample" mode="sorted">
 <xsl:apply-templates select="." mode="dir"/>
@@ -480,9 +528,32 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 <xsl:value-of select="concat('/',@name,'_recal.bam ')"/>
 </xsl:template>
 
+<xsl:template match="sample" mode="realigned">
+<xsl:apply-templates select="." mode="dir"/>
+<xsl:value-of select="concat('/',@name,'_realigned.bam ')"/>
+</xsl:template>
+
 <xsl:template match="sample" mode="dir">
 <xsl:text>$(OUTDIR)/</xsl:text>
 <xsl:value-of select="@name"/>
+</xsl:template>
+
+<xsl:template name="make.bai">
+<xsl:param name="bam"/>
+<xsl:text>
+#
+# create BAM index for </xsl:text>
+<xsl:value-of select="$bam"/>
+<xsl:text>
+#
+</xsl:text>
+<xsl:value-of select="concat(normalize-space($bam),'.bai')"/> <xsl:text>: </xsl:text><xsl:value-of select="$bam"/><xsl:text>
+	$(call timebegindb,$@)
+	$(SAMTOOLS) index $&lt;
+	$(call timeenddb,$@)
+	$(call sizedb,$@)
+
+</xsl:text>
 </xsl:template>
 
 </xsl:stylesheet>
