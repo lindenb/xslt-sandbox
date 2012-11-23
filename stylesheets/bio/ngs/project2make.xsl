@@ -78,7 +78,7 @@ VARKIT=${HOME}/src/variationtoolkit/bin
 DELETEFILE=echo "DELETE-FILE: "
 -->
 LOCKFILE=$(OUTDIR)/<xsl:value-of select="concat('_tmp.',generate-id(.),'.lock')"/>
-SQLITEDB=$(OUTDIR)/stats.sqlite
+XMLSTATS=$(OUTDIR)/pipeline.stats.xml
 INDEXED_REFERENCE=$(foreach S,.amb .ann .bwt .pac .sa .fai,$(addsuffix $S,$(REF))) $(addsuffix	.dict,$(basename $(REF)))
 SAMPLES=<xsl:for-each select="sample"><xsl:value-of select="concat(' ',@name)"/></xsl:for-each>
 
@@ -94,22 +94,20 @@ endef
 
 define timebegindb
 	lockfile $(LOCKFILE)
-	sqlite3 $(SQLITEDB) "create table if not exists timeBeginDB(target text UNIQUE NOT NULL,inserted int); insert OR REPLACE into timeBeginDB(target,inserted) values('$(1)',strftime('%s','now'));"
+	$(VARKIT)/simplekeyvalue -f $(XMLSTATS) -p time-begin "$(1)" `date +"%s"`
 	rm -f $(LOCKFILE)
 endef
 
 define timeenddb
 	lockfile $(LOCKFILE)
-	sqlite3 $(SQLITEDB) "create table if not exists timeEndDB(target text UNIQUE NOT NULL,inserted int); insert OR REPLACE into timeEndDB(target,inserted) values('$(1)',strftime('%s','now'));"
+	$(VARKIT)/simplekeyvalue -f $(XMLSTATS) -p time-end "$(1)" `date +"%s"`
 	rm -f $(LOCKFILE)
 endef
 
 
 define sizedb
 	lockfile $(LOCKFILE)
-	stat -c '%s' "$(1)" |\
-		awk -v f=$(1) '{printf("create table if not exists sizeDB(target text,size int); insert into sizeDB(target,size) values(\"%s\",\"%s\");\n",f,$$1);}' |\
-		sqlite3 $(SQLITEDB) 
+	stat -c "%s" $(1) | xargs $(VARKIT)/simplekeyvalue -f $(XMLSTATS) -p size "$(1)" 
 	rm -f $(LOCKFILE)
 endef
 
@@ -429,8 +427,10 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 
 
 <xsl:apply-templates select="." mode="sai"/>:<xsl:apply-templates select="." mode="fastq"/><xsl:text> </xsl:text><xsl:apply-templates select="." mode="dir"/> $(INDEXED_REFERENCE)
+	gunzip -c $&lt; | wc -l | sed 's%$$%/4%' | bc | while read C; do lockfile $(LOCKFILE); $(VARKIT)/simplekeyvalue -f $(XMLSTATS) -p count-reads $&lt; $$C ; rm -f $(LOCKFILE) ; done
 	$(call timebegindb,$@)
-	$(BWA) aln -t <xsl:value-of select="$bwathreads"/> -f $@ ${REF} $&lt;
+	$(call sizedb,$&lt;)
+	$(BWA) aln $(BWA.aln.options) -f $@ ${REF} $&lt;
 	$(call timeenddb,$@)
 	$(call sizedb,$@)
 
