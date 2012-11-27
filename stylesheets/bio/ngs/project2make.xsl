@@ -182,7 +182,8 @@ bams_sorted: </xsl:text><xsl:for-each select="sample/sequences/pair"><xsl:apply-
 coverage: </xsl:text><xsl:for-each select="sample"><xsl:apply-templates select="." mode="coverage"/></xsl:for-each>
 
 
-
+$(OUTDIR)/variations.samtools.vep.tsv.gz: $(OUTDIR)/variations.samtools.vcf.gz
+	$(VEP.bin) $(VEP.args) $(VEP.cache) --fasta $(REF)--format vcf --force_overwrite -i $&lt; -o STDOUT | gzip --best &gt; $@
 
 $(OUTDIR)/variations.samtools.snpEff.vcf.gz: $(OUTDIR)/variations.samtools.vcf.gz
 	gunzip -c  $&lt; |\
@@ -427,7 +428,7 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 
 
 <xsl:apply-templates select="." mode="sai"/>:<xsl:apply-templates select="." mode="fastq"/><xsl:text> </xsl:text><xsl:apply-templates select="." mode="dir"/> $(INDEXED_REFERENCE)
-	gunzip -c $&lt; | wc -l | sed 's%$$%/4%' | bc | while read C; do lockfile $(LOCKFILE); $(VARKIT)/simplekeyvalue -f $(XMLSTATS) -p count-reads $&lt; $$C ; rm -f $(LOCKFILE) ; done
+	#gunzip -c $&lt; | wc -l | sed 's%$$%/4%' | bc | while read C; do lockfile $(LOCKFILE); $(VARKIT)/simplekeyvalue -f $(XMLSTATS) -p count-reads $&lt; $$C ; rm -f $(LOCKFILE) ; done
 	$(call timebegindb,$@)
 	$(call sizedb,$&lt;)
 	$(BWA) aln $(BWA.aln.options) -f $@ ${REF} $&lt;
