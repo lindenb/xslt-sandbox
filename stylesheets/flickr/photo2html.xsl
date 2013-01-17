@@ -4,7 +4,7 @@
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	exclude-result-prefixes="x"
 	version="1.1">
-  <xsl:output method="html" omit-xml-declaration="yes"/>
+  <xsl:output method="html" omit-xml-declaration="yes" indent="no"/>
   <!--
 
 Usage:
@@ -88,12 +88,12 @@ Usage:
         </xsl:choose>
         <xsl:text>)</xsl:text>
       </i>
-    </div>
+   </div>
   </xsl:template>
   <xsl:template match="owner">
     <xsl:element name="a">
       <xsl:attribute name="href">
-        <xsl:value-of select="concat('http://www.flickr.com/photos/',@nsid)"/>
+        <xsl:value-of select="concat('http://www.flickr.com/people/',@nsid)"/>
       </xsl:attribute>
       <xsl:choose>
         <xsl:when test="string-length(@realname)&gt;0">
