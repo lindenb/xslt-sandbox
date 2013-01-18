@@ -158,7 +158,7 @@ Usage:
 </xsl:template>
 
 <xsl:template match="sl:slide[count(*)=1 and sl:pre]">
-<xsl:variable name="fontH" select="number(36)"/>
+<xsl:variable name="fontH" select="number(42)"/>
 <xsl:variable name="margin" select="number(20)"/>
 <fo:page-sequence master-reference="main">
    <fo:flow flow-name="xsl-region-body">
@@ -170,10 +170,15 @@ Usage:
          height="{$pageheight - $margin * 2.0 }px"
          background-color="lightgray"
          >
-         <fo:block text-align="left" font-family="monospace" font-size="{$fontH}pt"
+         <fo:block
+          text-align="left"
+          font-family="monospace"
+          font-size="{$fontH}pt"
        	  linefeed-treatment="preserve"
           white-space-treatment="preserve"
-          white-space-collapse="false"> 
+          white-space-collapse="false"
+          wrap-option="no-wrap "
+          >   
        	<xsl:apply-templates/>
        </fo:block>
        </fo:block-container>
