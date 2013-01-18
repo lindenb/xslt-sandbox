@@ -55,7 +55,7 @@
 </office:document-meta>
 </xsl:template>
 
-<xsl:template name="make.metainf.manifest.odp">
+<xsl:template name="make.metainf.manifest.old.odp">
 <manifest:manifest  manifest:version="1.2">
   <manifest:file-entry manifest:full-path="/" manifest:version="1.2" manifest:media-type="application/vnd.oasis.opendocument.presentation"/>
   <manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>
