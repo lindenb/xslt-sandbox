@@ -82,7 +82,7 @@ Usage:
  </fo:page-sequence>
 </xsl:template>
 
-<xsl:template match="sl:slide[count(*)=3 and sl:title]">
+<xsl:template match="sl:slide[count(*)&gt;1 and sl:title]">
 <xsl:variable name="margin" select="number(20)"/>
 <xsl:variable name="nodesbuttitle" select="./*[not(self::sl:title)]"/>
 <xsl:variable name="width" select=" ( number($pagewidth) - ( (count($nodesbuttitle)+1)*$margin ) ) div count($nodesbuttitle) "/>
@@ -162,15 +162,13 @@ Usage:
 
 <xsl:variable name="margin" select="number(20)"/>
 <fo:page-sequence master-reference="main">
-   <fo:flow flow-name="xsl-region-body">
-       <xsl:call-template name="archetype.pre">
+   <fo:flow flow-name="xsl-region-body"><xsl:call-template name="archetype.pre">
    		<xsl:with-param name="pageX" select="$margin"/>
    		<xsl:with-param name="pageY" select="$margin"/>
    		<xsl:with-param name="pageWidth" select="number($pagewidth) - 2 * $margin"/>
    		<xsl:with-param name="pageHeight" select="number($pageheight) - $margin * 2.0 "/>
    		<xsl:with-param name="node" select="sl:pre"/>
-   	</xsl:call-template>
-   </fo:flow>
+   	</xsl:call-template></fo:flow>
  </fo:page-sequence>
 </xsl:template>
 
@@ -196,18 +194,17 @@ Usage:
          width="{$pageWidth}px"
          height="{$pageHeight}px"
          background-color="lightgray"
+          
          font-size="{$fontH}pt"
-         >
-         <fo:block
+         ><fo:block
           text-align="left"
           font-family="monospace"
        	  linefeed-treatment="preserve"
           white-space-treatment="preserve"
           white-space-collapse="false"
-          wrap-option="no-wrap "
-          >
-       	<xsl:apply-templates/>
-       </fo:block>
+          wrap-option="no-wrap"
+          font-weight="bold"
+          ><xsl:apply-templates select="$node"/></fo:block>
        </fo:block-container>
 </xsl:template>
 

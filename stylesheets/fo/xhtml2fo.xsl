@@ -79,9 +79,7 @@
 </xsl:template>
 
 <xsl:template match="h:pre">
-	<fo:block xsl:use-attribute-sets="program">
-		<xsl:apply-templates select="text()"/>
-	</fo:block>
+	<fo:block><xsl:apply-templates select="text()"/></fo:block>
 </xsl:template>
 
 <xsl:template match="h:p">
