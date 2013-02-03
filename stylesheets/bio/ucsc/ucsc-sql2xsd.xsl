@@ -36,17 +36,33 @@ mysqldump -\-user=genome -\-host=genome-mysql.cse.ucsc.edu -d -X -\-skip-lock-ta
 </xs:schema>
 </xsl:template>
 
-
+<!-- ========================================== -->
 <xsl:template match="mysqldump">
+
+<xs:complexType name="ChromStartEnd">
+  <xs:sequence>
+  	<xs:element name="chrom" type="xs:string"/>
+  	<xs:element name="chromStart" type="xs:int"/>
+  	<xs:element name="chromEnd" type="xs:int"/>
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="Exon">
+  <xs:sequence>
+  	<xs:element name="start" type="xs:int"/>
+  	<xs:element name="end" type="xs:int"/>
+  </xs:sequence>
+</xs:complexType>
+
 <xsl:apply-templates select="database"/>
 </xsl:template>
 
-
+<!-- ========================================== -->
 <xsl:template match="database">
 <xsl:apply-templates select="table_structure"/>
 </xsl:template>
 
-
+<!-- ========================================== -->
 <xsl:template match="table_structure">
 <xs:complexType>
 <xsl:attribute name="name">
@@ -59,6 +75,12 @@ mysqldump -\-user=genome -\-host=genome-mysql.cse.ucsc.edu -d -X -\-skip-lock-ta
 </xs:sequence>
 </xs:complexType>
 </xsl:template>
+<!-- ========================================== -->
+
+
+<xsl:template match="field[@Field='cdsStart]" >
+</xsl:template>
+<!-- ========================================== -->
 
 
 <xsl:template match="field" >

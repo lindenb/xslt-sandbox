@@ -11,6 +11,7 @@ Author:
 
 Motivation:
 	Delicous To HTML
+	curl "https://api.del.icio.us/v1/posts/all?tag=todraw"
 
 -->
 <xsl:output method="html" />

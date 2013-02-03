@@ -96,6 +96,12 @@ Usage:
         <xsl:value-of select="concat('http://www.flickr.com/people/',@nsid)"/>
       </xsl:attribute>
       <xsl:choose>
+        <xsl:when test="@nsid='78799297@N00'">
+          <xsl:text>@homingpigen</xsl:text>
+        </xsl:when>
+        <xsl:when test="@nsid='71475737@N00'">
+          <xsl:text>@malloreigh</xsl:text>
+        </xsl:when>
         <xsl:when test="string-length(@realname)&gt;0">
           <xsl:value-of select="@realname"/>
         </xsl:when>
