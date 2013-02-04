@@ -2,6 +2,7 @@
 <xsl:stylesheet
 	xmlns:xsl='http://www.w3.org/1999/XSL/Transform'
 	xmlns:p='http://github.com/lindenb/xslt-sandbox/stylesheets/java/pojo2va/'
+	xmlns:date="http://exslt.org/dates-and-times"
 	version='1.0'
 	>
 <!--
@@ -55,23 +56,28 @@ Author:
 
 <xsl:message><xsl:value-of select="$filename"/></xsl:message>
 
-<!-- <xsl:document href="{$filename}"> -->
+<xsl:document href="{$filename}"  method="text">
 <xsl:if test="string-length($pack)&gt;0">
 package <xsl:value-of select="$pack"/>;
 </xsl:if>
 
-@javax.annotation.Generated(
-	value="pojo2java.xsl",
-	comments = "generated with pojo2java", 
-	date="2013"
-	)
-public <xsl:apply-templates select="." mode="class"/>
-<!-- </xsl:document> -->
+<xsl:apply-templates select="." mode="class"/>
+</xsl:document>
 </xsl:template>
 
 <xsl:template match="p:class" mode="class">
 
-<xsl:if test="@abstract='true'">abstract </xsl:if> class <xsl:apply-templates select="." mode="javaName"/>
+
+@javax.annotation.Generated(
+	value="pojo2java.xsl",
+	comments = "generated with pojo2java", 
+	date="<xsl:value-of select="date:date-time()"/>"
+	)
+<xsl:if test="@generate-jaxb='true'">@javax.xml.bind.annotation.XmlRootElement(name = "<xsl:value-of select="@name"/>")
+</xsl:if>
+public  <xsl:if test="@abstract='true'">abstract </xsl:if> class <xsl:apply-templates select="." mode="javaName"/>
+<xsl:if test="@extends"> exends <xsl:value-of select="@extends"/></xsl:if>
+<xsl:if test="@implements"> implements <xsl:value-of select="@implements"/></xsl:if>
 	{
 	<xsl:if test="$listener='true'">
 	private final transient java.beans.PropertyChangeSupport _propertyChangleListener= new java.beans.PropertyChangeSupport(this);
@@ -82,11 +88,19 @@ public <xsl:apply-templates select="." mode="class"/>
 	</xsl:if>
 	<xsl:apply-templates select="p:property" mode="decl"/>
 	
+	/**
+	 * Constructor
+	 * 
+	 */
 	public <xsl:apply-templates select="." mode="javaName"/>()
 		{
 		}
 		
-	public <xsl:apply-templates select="." mode="javaName"/>(final <xsl:apply-templates select="." mode="javaName"/> cp)
+	/**
+	 * Copy Constructor
+	 * 
+	 */	
+	 public <xsl:apply-templates select="." mode="javaName"/>(final <xsl:apply-templates select="." mode="javaName"/> cp)
 		{
 		<xsl:for-each select="p:property">
 		this.<xsl:value-of select="@name"/>=cp.<xsl:value-of select="@name"/>;
@@ -94,6 +108,10 @@ public <xsl:apply-templates select="." mode="class"/>
 		}
 	
 	<xsl:if test="p:property">
+
+	/**
+	 * Constructor with all params
+	 */		
 	public <xsl:apply-templates select="." mode="javaName"/>(<xsl:for-each select="p:property">
 		<xsl:if test="position()&gt;1">,</xsl:if>
 		<xsl:value-of select="@type"/>
@@ -111,7 +129,7 @@ public <xsl:apply-templates select="." mode="class"/>
 	
 	<xsl:if test="$listener='true'">
 	
-	protected  java.beans.PropertyChangeSupport changeSupport()
+	 protected  java.beans.PropertyChangeSupport changeSupport()
 		{
 		return this._propertyChangleListener;
 		}
@@ -127,6 +145,19 @@ public <xsl:apply-templates select="." mode="class"/>
                changeSupport().removePropertyChangeListener(listener);
                }
         </xsl:if>
+	
+	@Override
+	public String toString()
+		{
+		StringBuilder b=new StringBuilder("<xsl:apply-templates select="." mode="javaName"/>{");
+		<xsl:for-each select="p:property">
+		b.append(" <xsl:value-of select="@name"/>:");
+		b.append(String.valueOf(this.<xsl:value-of select="@name"/>));
+		</xsl:for-each>
+		b.append("}");
+		return b.toString();
+		}
+	
 	
 	<xsl:apply-templates select="p:property" mode="gettersetter"/>
 	
@@ -147,7 +178,17 @@ public <xsl:apply-templates select="." mode="class"/>
          * <xsl:value-of select="@name"/>
          * <xsl:value-of select="@description"/>
          */
-        private <xsl:value-of select="@type"/><xsl:text> </xsl:text><xsl:value-of select="@name"/>=null;
+        private <xsl:value-of select="@type"/><xsl:text> </xsl:text><xsl:value-of select="@name"/>=<xsl:choose>
+        <xsl:when test="@default">(<xsl:value-of select="@type"/>)<xsl:value-of select="@default"/></xsl:when>
+        <xsl:when test="@type='boolean'">false</xsl:when>
+        <xsl:when test="@type='byte'">(byte)0</xsl:when>
+        <xsl:when test="@type='short'">(short)0</xsl:when>
+        <xsl:when test="@type='int'">0</xsl:when>
+        <xsl:when test="@type='long'">0L</xsl:when>
+        <xsl:when test="@type='float'">(float)0</xsl:when>
+        <xsl:when test="@type='double'">0.0</xsl:when>
+        <xsl:otherwise>null</xsl:otherwise>
+        </xsl:choose>;
         
 </xsl:template>
 
@@ -171,16 +212,25 @@ public <xsl:apply-templates select="." mode="class"/>
          * getter for <xsl:value-of select="@name"/>
          * <xsl:value-of select="@description"/>
          */
+        <xsl:if test="../@generate-jaxb='true'">@javax.xml.bind.annotation.XmlElement(name = "<xsl:value-of select="@name"/>")
+        </xsl:if>
+        <xsl:choose>
+        <xsl:when test="@type='boolean'">
+        public boolean <xsl:value-of select="concat('is',$javaName)"/>()
+        </xsl:when>
+        <xsl:otherwise>
         public <xsl:value-of select="@type"/><xsl:text> </xsl:text><xsl:value-of select="concat('get',$javaName)"/>()
+        </xsl:otherwise>
+         </xsl:choose>
         	{
         	return this.<xsl:value-of select="@name"/>;
         	}
-        
+       
         /** 
          * setter for <xsl:value-of select="@name"/>
          * <xsl:value-of select="@description"/>
          */
-        public  void <xsl:value-of select="concat('set',$javaName)"/>(<xsl:value-of select="@type"/><xsl:text> </xsl:text><xsl:value-of select="@name"/>)
+        public  void <xsl:value-of select="concat('set',$javaName)"/>(final <xsl:value-of select="@type"/><xsl:text> </xsl:text><xsl:value-of select="@name"/>)
         	{
         	<xsl:if test="$listener='true'">
         	<xsl:value-of select="@type"/> oldValue=this.<xsl:value-of select="@name"/>;
