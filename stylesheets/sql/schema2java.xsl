@@ -96,6 +96,10 @@ public class <xsl:value-of select="$orm"/>
 	public abstract class AbstractRecord
 		{
 		public abstract Table getTable();
+		public abstract void insert() throws SQLException;
+		public abstract void update() throws SQLException;
+		public abstract void refresh() throws SQLException;
+		public abstract void delete() throws SQLException;
 		public Database getDatabase()
 			{
 			return getTable().getDatabase();

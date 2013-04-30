@@ -1,7 +1,7 @@
 <?xml version='1.0' ?>
 <xsl:stylesheet
 	xmlns:xsl='http://www.w3.org/1999/XSL/Transform'
-	xmlns:p='http://github.com/lindenb/xslt-sandbox/stylesheets/java/pojo2va/'
+	xmlns:p='http://github.com/lindenb/xslt-sandbox/stylesheets/java/pojo2java/'
 	xmlns:date="http://exslt.org/dates-and-times"
 	version='1.0'
 	>
@@ -204,6 +204,8 @@ public  <xsl:if test="@abstract='true'">abstract </xsl:if> class <xsl:apply-temp
 	</xsl:call-template>
 </xsl:template>
 
+
+
 <xsl:template match="p:property" mode="gettersetter">
 <xsl:variable name="javaName">
 	<xsl:apply-templates select="." mode="javaName"/>
@@ -249,6 +251,36 @@ public  <xsl:if test="@abstract='true'">abstract </xsl:if> class <xsl:apply-temp
  <xsl:value-of select="translate(substring($name,1,1),'abcdefghijklmnopqrstuvwxy
 z','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
  <xsl:value-of select="substring($name,2)"/>
+</xsl:template>
+
+<xsl:template name="is.generic">
+<xsl:param name="type"/>
+<xsl:choose>
+	<xsl:when test="$type='boolean'"></xsl:when>
+        <xsl:when test="$type='byte'"></xsl:when>
+        <xsl:when test="$type='short'"></xsl:when>
+        <xsl:when test="$type='int'"></xsl:when>
+        <xsl:when test="$type='long'"></xsl:when>
+        <xsl:when test="$type='float'"></xsl:when>
+        <xsl:when test="$type='double'"></xsl:when>
+	<xsl:when test="$type='Boolean'"></xsl:when>
+        <xsl:when test="$type='Byte'"></xsl:when>
+        <xsl:when test="$type='Short'"></xsl:when>
+        <xsl:when test="$type='Integer'"></xsl:when>
+        <xsl:when test="$type='Long'"></xsl:when>
+        <xsl:when test="$type='Float'"></xsl:when>
+        <xsl:when test="$type='Double'"></xsl:when>
+	<xsl:when test="$type='Boolean'"></xsl:when>
+	<xsl:when test="$type='String'"></xsl:when>
+        <xsl:when test="$type='java.lang.Byte'"></xsl:when>
+        <xsl:when test="$type='java.lang.Short'"></xsl:when>
+        <xsl:when test="$type='java.lang.Integer'"></xsl:when>
+        <xsl:when test="$type='java.lang.Long'"></xsl:when>
+        <xsl:when test="$type='java.lang.Float'"></xsl:when>
+        <xsl:when test="$type='java.lang.Double'"></xsl:when>
+        <xsl:when test="$type='java.lang.String'"></xsl:when>
+        <xsl:otherwise>1</xsl:otherwise>
+</xsl:otherwise>
 </xsl:template>
 
 </xsl:stylesheet>
