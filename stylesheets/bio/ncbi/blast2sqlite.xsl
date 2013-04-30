@@ -45,6 +45,7 @@ create table if not exists Parameters
 	(
 	<xsl:value-of select="$pkey"/>,
 	blastOutput_id INTEGER,
+	matrix TEXT,
 	expect REAL,
 	sc_match REAL,
 	sc_mismatch REAL,
@@ -133,8 +134,14 @@ insert into BlastOutput(
 		<xsl:apply-templates select="BlastOutput_version"/>,
 		<xsl:apply-templates select="BlastOutput_reference"/>,
 		<xsl:apply-templates select="BlastOutput_db"/>,
-		<xsl:apply-templates select="BlastOutput_query-ID"/>,
-		<xsl:apply-templates select="BlastOutput_query-def"/>,
+		<xsl:choose>
+		<xsl:when test="BlastOutput_query-ID"><xsl:apply-templates select="BlastOutput_query-ID"/></xsl:when>
+		<xsl:otherwise>NULL</xsl:otherwise>
+		</xsl:choose>,
+		<xsl:choose>
+			<xsl:when test="BlastOutput_query-def"><xsl:apply-templates select="BlastOutput_query-def"/></xsl:when>
+			<xsl:otherwise>NULL</xsl:otherwise>
+		</xsl:choose>,
 		<xsl:value-of select="BlastOutput_query-len"/>
 		);
 
@@ -148,6 +155,7 @@ COMMIT TRANSACTION;
 insert into Parameters(
 	blastOutput_id,
 	expect,
+	matrix,
 	sc_match,
 	sc_mismatch,
 	gap_open,
@@ -155,12 +163,28 @@ insert into Parameters(
 	filter
 	)
 select MAX(id),
-	<xsl:value-of select="Parameters_expect"/>,
-	<xsl:value-of select="Parameters_sc-match"/>,
-	<xsl:value-of select="Parameters_sc-mismatch"/>,
+	<xsl:choose>
+		<xsl:when test="Parameters_expect"><xsl:value-of select="Parameters_expect"/></xsl:when>
+		<xsl:otherwise>NULL</xsl:otherwise>
+	</xsl:choose>,
+	<xsl:choose>
+		<xsl:when test="Parameters_matrix"><xsl:apply-templates select="Parameters_matrix"/></xsl:when>
+		<xsl:otherwise>NULL</xsl:otherwise>
+	</xsl:choose>,
+	<xsl:choose>
+		<xsl:when test="Parameters_sc-match"><xsl:value-of select="Parameters_sc-match"/></xsl:when>
+		<xsl:otherwise>NULL</xsl:otherwise>
+	</xsl:choose>,
+	<xsl:choose>
+		<xsl:when test="Parameters_sc-mismatch"><xsl:value-of select="Parameters_sc-mismatch"/></xsl:when>
+		<xsl:otherwise>NULL</xsl:otherwise>
+	</xsl:choose>,
 	<xsl:value-of select="Parameters_gap-open"/>,
 	<xsl:value-of select="Parameters_gap-extend"/>,
-	<xsl:apply-templates select="Parameters_filter"/>
+	<xsl:choose>
+		<xsl:when test="Parameters_filter"><xsl:apply-templates select="Parameters_filter"/></xsl:when>
+		<xsl:otherwise>NULL</xsl:otherwise>
+	</xsl:choose>
 	from BlastOutput;
 	
 </xsl:template>

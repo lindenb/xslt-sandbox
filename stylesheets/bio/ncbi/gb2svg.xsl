@@ -19,9 +19,13 @@ Usage :
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:svg="http://www.w3.org/2000/svg"
         xmlns:xlink="http://www.w3.org/1999/xlink"
-	version='1.0'
+        xmlns:str="http://exslt.org/strings"
+	extension-element-prefixes="str"
+	version='1.1'
 	>
 <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="no"/>
+
+<xsl:param name="variations"/><!-- space-separated list of positions to highlight -->
 
 <xsl:param name="feature-height" select="number(20)"/>
 <xsl:param name="title-height" select="2 * $feature-height"/>
@@ -164,6 +168,7 @@ Usage :
   <xsl:attribute name="width"><xsl:value-of select="$fright - $fleft"/></xsl:attribute>
   <xsl:attribute name="height"><xsl:value-of select="$feature-height - 2"/></xsl:attribute>
   <xsl:attribute name="style">fill:url(#grad);stroke:black;</xsl:attribute>
+  <xsl:attribute name="title"><xsl:value-of select="../../INSDFeature_location"/></xsl:attribute>
 </xsl:element>
 
 
@@ -199,6 +204,23 @@ Usage :
 
 </xsl:element><!-- g -->
 </xsl:for-each>
+
+<!-- BEGIN mutations -->
+<xsl:for-each select="str:tokenize($variations,' ,/')">
+<xsl:if test="number(text())&gt;=0">
+<xsl:variable name="mutpos" select="number(./text())"/>
+<xsl:variable name="varx">
+<xsl:value-of select="$left-margin + (( $mutpos - $seqmin )  div ($seqmax - $seqmin) ) * $width "/>
+</xsl:variable>
+<svg:line style="stroke:red;" y1="0">
+	<xsl:attribute name="title">Mutation at <xsl:value-of select="."/></xsl:attribute>
+	<xsl:attribute name="y2"><xsl:value-of select="$seqheight"/></xsl:attribute>
+	<xsl:attribute name="x1"><xsl:value-of select="$varx"/></xsl:attribute>
+	<xsl:attribute name="x2"><xsl:value-of select="1 + $varx"/></xsl:attribute>
+</svg:line>
+</xsl:if>
+</xsl:for-each>
+<!-- END mutations -->
 
 <xsl:element name="svg:rect">
   <xsl:attribute name="x">0</xsl:attribute>

@@ -25,12 +25,7 @@ Usage:
       <xsl:value-of select="concat('http://www.flickr.com/photos/',owner/@nsid,'/',@id)"/>
     </xsl:variable>
     <div>
-      <xsl:value-of select="x:month-name()"/>
-      <xsl:text> </xsl:text>
-      <xsl:value-of select="x:day-in-month()"/>
-      <xsl:text>, </xsl:text>
-      <xsl:value-of select="x:year()"/>
-      <xsl:text>. Source:</xsl:text>
+      <xsl:text>Source: </xsl:text>
       <xsl:element name="a">
         <xsl:attribute name="href">
           <xsl:value-of select="$u"/>
@@ -86,9 +81,35 @@ Usage:
             <xsl:value-of select="@license"/>
           </xsl:otherwise>
         </xsl:choose>
-        <xsl:text>)</xsl:text>
+        <xsl:text>). </xsl:text>
+        
+        
+      <xsl:value-of select="x:month-name()"/>
+      <xsl:text> </xsl:text>
+      <xsl:value-of select="x:day-in-month()"/>
+      <xsl:text>, </xsl:text>
+      <xsl:value-of select="x:year()"/>
+      <xsl:text>.</xsl:text>
       </i>
    </div>
+<xsl:text>
+
+
+
+</xsl:text>
+<xsl:variable name="commontags">drawing sketch illustration gimp onedrawingaday portrait dessin femme fille art retrato face visage</xsl:variable>
+<xsl:comment>Common tags
+
+<xsl:value-of select="$commontags"/>
+<xsl:text>
+
+</xsl:text>
+<xsl:value-of select="translate($commontags,' ',',')"/>
+<xsl:text>
+
+</xsl:text>
+</xsl:comment>
+
   </xsl:template>
   <xsl:template match="owner">
     <xsl:element name="a">
@@ -102,6 +123,24 @@ Usage:
         <xsl:when test="@nsid='71475737@N00'">
           <xsl:text>@malloreigh</xsl:text>
         </xsl:when>
+         <xsl:when test="@nsid='95269120@N00'">
+          <xsl:text>@gusgreeper</xsl:text>
+        </xsl:when>
+        <xsl:when test="@nsid='7706223@N02'">
+          <xsl:text>@lu_lu</xsl:text>
+        </xsl:when>
+        <xsl:when test="@nsid='47864451@N00'">
+          <xsl:text>@wigglewarily</xsl:text>
+        </xsl:when>
+         <xsl:when test="@nsid='65391539@N03'">
+          <xsl:text>@Abitha_Arabella</xsl:text>
+        </xsl:when>
+         <xsl:when test="@nsid='41619721@N02'">
+          <xsl:text>@ivanavasilj</xsl:text>
+        </xsl:when>
+        <xsl:when test="@username='emurray'">
+	  <xsl:text>@ericmurray</xsl:text>
+	</xsl:when>
         <xsl:when test="string-length(@realname)&gt;0">
           <xsl:value-of select="@realname"/>
         </xsl:when>

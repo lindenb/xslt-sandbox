@@ -34,7 +34,7 @@ Motivation:
 <xsl:template match="post">
 <p><b><xsl:value-of select="@description"/></b> : <a>
 	<xsl:attribute name="href"><xsl:value-of select="@href"/></xsl:attribute>
-<xsl:value-of select="@href"/></a></p>
+<xsl:value-of select="@href"/></a> (<xsl:value-of select="@time"/>)</p>
 <xsl:apply-templates/>
 
 </xsl:template>
