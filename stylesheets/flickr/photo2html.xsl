@@ -97,7 +97,7 @@ Usage:
 
 
 </xsl:text>
-<xsl:variable name="commontags">drawing sketch illustration gimp onedrawingaday portrait dessin femme fille art retrato face visage</xsl:variable>
+<xsl:variable name="commontags">drawing sketch illustration gimp onedrawingaday portrait dessin femme fille art retrato face visage artwork</xsl:variable>
 <xsl:comment>Common tags
 
 <xsl:value-of select="$commontags"/>
