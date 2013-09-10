@@ -32,7 +32,7 @@ Next, were going to create the \docECore{EEnum} and the \docECore{EClass}:
 <xsl:apply-templates select="eClassifiers" mode="create"/>
 \end{itemize}
 
-Then, we add each complete the structure of the classifiers:\\
+Then, we complete the structure of each classifier:\\
 <xsl:apply-templates select="eClassifiers"/>
 </xsl:template>
 
@@ -42,8 +42,8 @@ Then, we add each complete the structure of the classifiers:\\
 
 
 <xsl:template match="eClassifiers[@xsi:type='ecore:EEnum']">
-\begin{section}{<xsl:value-of select="@name"/>}
-In the tree view, right-click on the node\docECore{EEnum} "\textbf{<xsl:value-of select="@name"/>}"  and add the following <xsl:value-of select="count(eLiterals)"/> eLiterals:
+\begin{subsection}{<xsl:value-of select="@name"/>}
+In the tree view, right-click on the node \docECore{EEnum} "\textbf{<xsl:value-of select="@name"/>}"  and add the following <xsl:value-of select="count(eLiterals)"/> eLiterals:
 
 \begin{center}
 \begin{tabular}{ r | l | l}
@@ -51,12 +51,12 @@ Name &amp; Literal &amp; Value\\
 \hline
 <xsl:apply-templates select="eLiterals" mode="tr"/>\end{tabular}
 \end{center}
-\end{section}
+\end{subsection}
 </xsl:template>
 
 
 <xsl:template match="eClassifiers[@xsi:type='ecore:EClass']">
-\begin{section}{<xsl:value-of select="@name"/>}
+\begin{subsection}{<xsl:value-of select="@name"/>}
 In the tree view, select the node  \docECore{EClass} "\textbf{<xsl:value-of select="../@name"/>}" and set the following properties:\\
 
 \begin{center}
@@ -65,15 +65,14 @@ Key &amp; Value\\
 \hline
 <xsl:apply-templates select="@*" mode="tr"/>\end{tabular}
 \end{center}
-
-Add some structural features to the  \docECore{EClass} "\textbf{<xsl:value-of select="../@name"/>}":\\
+We add some structural features to the  \docECore{EClass} "\textbf{<xsl:value-of select="@name"/>}":\\
 <xsl:apply-templates select="eStructuralFeatures" mode="table"/>
-\end{section}
+\end{subsection}
 </xsl:template>
 
 
 <xsl:template match="eStructuralFeatures" mode="table">
-\begin{section}{<xsl:value-of select="../@name"/>:<xsl:value-of select="@name"/>}
+\begin{subsubsection}{<xsl:value-of select="../@name"/>:<xsl:value-of select="@name"/>}
 In the tree view, right click on the node \docECore{EClass} "\textbf{<xsl:value-of select="../@name"/>}"
 Create a new \docECore{<xsl:value-of select="substring-after(@xsi:type,':')"/>} named "\textbf{<xsl:value-of select="@name"/>}" and set its properties:\\
 
@@ -83,7 +82,7 @@ Key &amp; Value\\
 \hline
 <xsl:apply-templates select="@*" mode="tr"/>\end{tabular}
 \end{center}
-\end{section}
+\end{subsubsection}
 </xsl:template>
 
 
