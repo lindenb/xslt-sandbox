@@ -44,7 +44,7 @@
                                       <xsl:with-param name="string">
                                         <xsl:call-template name="latex-string-replace">
                                           <xsl:with-param name="from">|</xsl:with-param>
-                                          <xsl:with-param name="to">\docbooktolatexpipe{}</xsl:with-param>
+                                          <xsl:with-param name="to">|</xsl:with-param>
                                           <xsl:with-param name="string">
                                             <xsl:call-template name="latex-string-replace">
                                               <xsl:with-param name="from">{</xsl:with-param>

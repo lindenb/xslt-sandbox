@@ -202,10 +202,6 @@ Example:  curl -s "https://github.com/lindenb/jvarkit/wiki/SamJS" | xsltproc -\-
 </a>
 </xsl:template>
 
-<xsl:template match="prev[name(..)='div' and ../@class='highlight']">
-<pre style='font-family: Consolas,"Liberation Mono",Courier,monospace;background: none repeat scroll 0% 0% rgb(255, 255, 255);'><xsl:apply-templates/></pre>
-</xsl:template>
-
 <xsl:template match="pre|code|kbd|samp">
 <xsl:element name="{local-name(.)}">
 <xsl:attribute name="style">
@@ -328,5 +324,13 @@ padding: 6px 13px;
 <xsl:apply-templates/>
 </xsl:element>
 </xsl:template> 
+
+
+<xsl:template match="a[@href and starts-with(@href,'/')]">
+<a>
+<xsl:attribute name="href"><xsl:value-of select="concat('https://github.com',@href)"/></xsl:attribute>
+<xsl:apply-templates />
+</a>
+</xsl:template>
 
 </xsl:stylesheet>
