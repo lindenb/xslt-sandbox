@@ -39,3 +39,17 @@ Convert blast to HTML (see also http://www.biostars.org/p/6635/ )
 ```bash
 $ xsltproc --novalid blast2html.xsl blast.xml > result.html
 ```
+
+Insert Pubmed into a sqlite3 database.
+
+```bash
+$ xsltproc --novalid stylesheets/bio/ncbi/pubmed2sqlite.xsl pubmed_result.xml | sqlite3 jeter.db
+```
+
+Create a simple Blast dot plot (see  http://www.biostars.org/p/85258/ "Make a dotplot from blast alignment" ) 
+
+```bash
+$ xsltproc --novalid stylesheets/bio/ncbi/pubmed2sqlite.xsl pubmed_result.xml | sqlite3 jeter.db
+```
+
+
