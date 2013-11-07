@@ -39,3 +39,11 @@ Convert blast to HTML (see also http://www.biostars.org/p/6635/ )
 ```bash
 $ xsltproc --novalid blast2html.xsl blast.xml > result.html
 ```
+
+
+Convert kegg-xml (kgml) to GEXF (see also http://www.biostars.org/p/85763/ )
+
+```bash
+$ xsltproc --novalid kgml2gexf.xsl "http://kgmlreader.googlecode.com/svn/trunk/KGMLReader/testData/kgml/non-metabolic/organisms/hsa/hsa04060.xml" > result.gexf
+```
+
