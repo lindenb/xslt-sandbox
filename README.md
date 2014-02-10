@@ -47,11 +47,19 @@ Convert kegg-xml (kgml) to GEXF (see also http://www.biostars.org/p/85763/ )
 $ xsltproc --novalid kgml2gexf.xsl "http://kgmlreader.googlecode.com/svn/trunk/KGMLReader/testData/kgml/non-metabolic/organisms/hsa/hsa04060.xml" > result.gexf
 ```
 
-Insert Pubmed into a sqlite3 database.
+Insert **Pubmed** into a **sqlite3** database.
 
 ```bash
 $ xsltproc --novalid stylesheets/bio/ncbi/pubmed2sqlite.xsl pubmed_result.xml | sqlite3 jeter.db
 ```
+
+convert **Pubmed** to **JSON**
+
+```bash
+$ xsltproc --novalid stylesheets/bio/ncbi/pubmed2json.xsl pubmed_result.xml  | python -mjson.tool
+
+```
+
 
 Create a simple Blast dot plot (see  http://www.biostars.org/p/85258/ "Make a dotplot from blast alignment" ) 
 
