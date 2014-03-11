@@ -48,7 +48,7 @@ Author:
 		<xsl:text>,"title":null</xsl:text>
 	</xsl:otherwise>
 </xsl:choose>
-
+<xsl:apply-templates select="Article/Journal/JournalIssue"/>
 <xsl:choose>
 	<xsl:when test="Article/Abstract/AbstractText">
 		<xsl:text>,"abstract":</xsl:text>
@@ -66,7 +66,7 @@ Author:
 
 
 <xsl:template match="MedlineJournalInfo">
-<xsl:text>,"journal":{"nlmUniqueID":</xsl:text>
+<xsl:text>,"journalInfo":{"nlmUniqueID":</xsl:text>
 <xsl:call-template name="quote">
 	<xsl:with-param name="s" select="NlmUniqueID"/>
 </xsl:call-template>
@@ -95,9 +95,107 @@ Author:
 <xsl:call-template name="quote">
 	<xsl:with-param name="s" select="ForeName"/>
 </xsl:call-template>
+
+<xsl:if test="Initials">
+	<xsl:text>,"initials":</xsl:text>
+	<xsl:call-template name="quote">
+		<xsl:with-param name="s" select="Initials"/>
+	</xsl:call-template>
+</xsl:if>
+
+<xsl:if test="Affiliation">
+	<xsl:text>,"affiliation":</xsl:text>
+	<xsl:call-template name="quote">
+		<xsl:with-param name="s" select="Affiliation"/>
+	</xsl:call-template>
+</xsl:if>
+
+
 <xsl:text>}</xsl:text>
 </xsl:template>
 
+
+<xsl:template match="JournalIssue">
+<xsl:text>,"journal":{"volume":</xsl:text>
+<xsl:choose>
+	<xsl:when test="Volume">
+		<xsl:call-template name="quote">
+			<xsl:with-param name="s" select="Volume"/>
+		</xsl:call-template>
+	</xsl:when>
+	<xsl:otherwise>
+		<xsl:text>null</xsl:text>
+	</xsl:otherwise>
+</xsl:choose>
+<xsl:text>,"issue":</xsl:text>
+<xsl:choose>
+	<xsl:when test="Issue">
+		<xsl:call-template name="quote">
+			<xsl:with-param name="s" select="Issue"/>
+		</xsl:call-template>
+	</xsl:when>
+	<xsl:otherwise>
+		<xsl:text>null</xsl:text>
+	</xsl:otherwise>
+</xsl:choose>
+<xsl:text>,"pubdate":</xsl:text>
+<xsl:choose>
+	<xsl:when test="PubDate">
+		<xsl:apply-templates select="PubDate" mode="date"/>
+	</xsl:when>
+	<xsl:otherwise>
+		<xsl:text>null</xsl:text>
+	</xsl:otherwise>
+</xsl:choose>
+
+<xsl:text>}</xsl:text>
+</xsl:template>
+
+<xsl:template match="*" mode="date">
+<xsl:text>{"year":</xsl:text>
+<xsl:choose>
+	<xsl:when test="number(Year)&gt;0">
+		<xsl:value-of select="Year"/>
+	</xsl:when>
+	<xsl:when test="Year">
+		<xsl:call-template name="quote">
+			<xsl:with-param name="s" select="Year"/>
+		</xsl:call-template>
+	</xsl:when>
+	<xsl:otherwise>
+		<xsl:text>null</xsl:text>
+	</xsl:otherwise>
+</xsl:choose>
+<xsl:text>,"month":</xsl:text>
+<xsl:choose>
+	<xsl:when test="number(Month)&gt;0">
+		<xsl:value-of select="Month"/>
+	</xsl:when>
+	<xsl:when test="Month">
+		<xsl:call-template name="quote">
+			<xsl:with-param name="s" select="Month"/>
+		</xsl:call-template>
+	</xsl:when>
+	<xsl:otherwise>
+		<xsl:text>null</xsl:text>
+	</xsl:otherwise>
+</xsl:choose>
+<xsl:text>,"day":</xsl:text>
+<xsl:choose>
+	<xsl:when test="number(Day)&gt;0">
+		<xsl:value-of select="Day"/> 
+	</xsl:when>
+	<xsl:when test="Day">
+		<xsl:call-template name="quote">
+			<xsl:with-param name="s" select="Day"/>
+		</xsl:call-template>
+	</xsl:when>
+	<xsl:otherwise>
+		<xsl:text>null</xsl:text>
+	</xsl:otherwise>
+</xsl:choose>
+<xsl:text>}</xsl:text>
+</xsl:template>
 
 <xsl:template name="quote">
 <xsl:param name="s"/>
