@@ -36,11 +36,11 @@ Example:  curl -s "https://github.com/lindenb/jvarkit/wiki/SamJS" | xsltproc -\-
 
 <xsl:template match="body">
 <body style="font-family: sans-serif;color: rgb(51, 51, 51);">
-<xsl:apply-templates select="//div[@class='markdown-body']"/>
+<xsl:apply-templates select="//div[@class='markdown-body']|//article"/>
 </body>
 </xsl:template> 
 
-<xsl:template match="div[@class='markdown-body']">
+<xsl:template match="div[@class='markdown-body']|//article">
 <div style="font-size: 15px; line-height: 1.7;word-wrap: break-word;background: none repeat scroll 0% 0% rgb(255, 255, 255);">
 <xsl:apply-templates/>
 </div>
