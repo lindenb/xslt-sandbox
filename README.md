@@ -73,7 +73,7 @@ Get the number of children for each term in gene-ontology (see  https://www.bios
 ```bash
 curl  "http://archive.geneontology.org/latest-termdb/go_daily-termdb.rdf-xml.gz" |\
 	gunzip -c |\
-	xsltproc --novalid go2countchildren.xsl go.rdf > count.tsv
+	xsltproc --novalid go2countchildren.xsl go.rdf - > count.tsv
 ```
 
 
