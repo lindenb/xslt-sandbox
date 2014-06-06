@@ -68,3 +68,13 @@ $ xsltproc --novalid stylesheets/bio/ncbi/pubmed2sqlite.xsl pubmed_result.xml | 
 ```
 
 
+Get the number of children for each term in gene-ontology (see  https://www.biostars.org/p/102699/ "How to determine the terminal GO terms within GO DAG" ) 
+
+```bash
+curl  "http://archive.geneontology.org/latest-termdb/go_daily-termdb.rdf-xml.gz" |\
+	gunzip -c |\
+	xsltproc --novalid go2countchildren.xsl go.rdf > count.tsv
+```
+
+
+

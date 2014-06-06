@@ -15,7 +15,7 @@ Author:
 Motivation:
       transforms GeneOntology (rdf/XML) of gexf ( see www.gephi.org )
 Reference:
-    http://biostar.stackexchange.com/questions/9955
+    https://www.biostars.org/p/99360/
 Usage :
       xsltproc go2gexf.xsl go.rdf > go.gexf
 -->
