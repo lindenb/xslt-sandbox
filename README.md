@@ -67,4 +67,8 @@ Create a simple Blast dot plot (see  http://www.biostars.org/p/85258/ "Make a do
 $ xsltproc --novalid stylesheets/bio/ncbi/pubmed2sqlite.xsl pubmed_result.xml | sqlite3 jeter.db
 ```
 
-
+Transforms a **NCBI taxonomy** to **Graphiz dot**:
+```bash
+ xsltproc taxon2dot.xsl "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=9606,9913,30521,562,2157" |\
+ 	dot -oout.png -Tpng 
+```
