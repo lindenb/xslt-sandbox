@@ -67,8 +67,24 @@ Create a simple Blast dot plot (see  http://www.biostars.org/p/85258/ "Make a do
 $ xsltproc --novalid stylesheets/bio/ncbi/pubmed2sqlite.xsl pubmed_result.xml | sqlite3 jeter.db
 ```
 
+
 Transforms a **NCBI taxonomy** to **Graphiz dot**:
 ```bash
  xsltproc taxon2dot.xsl "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=9606,9913,30521,562,2157" |\
  	dot -oout.png -Tpng 
 ```
+
+Get the number of children for each term in gene-ontology (see  https://www.biostars.org/p/102699/ "How to determine the terminal GO terms within GO DAG" ) 
+
+```bash
+curl  "http://archive.geneontology.org/latest-termdb/go_daily-termdb.rdf-xml.gz" |\
+	gunzip -c |\
+	xsltproc --novalid go2countchildren.xsl go.rdf - > count.tsv
+```
+
+Extract **HTML** form:
+```bash
+$ curl -L google.com | xsltproc --html  stylesheets/html/html2curl.xsl -
+'&ie=ISO-8859-1&hl=fr&source=hp&q=&btnG=Recherche%20Google&btnI=J'ai%20de%20la%20chance&gbv=1'
+```
+
