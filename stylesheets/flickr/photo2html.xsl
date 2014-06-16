@@ -37,7 +37,7 @@ Usage:
         </xsl:if>
         <xsl:choose>
           <xsl:when test="string-length(normalize-space(title))=0">
-            <xsl:value-of select="$u"/>
+            <xsl:text>flickr</xsl:text>
           </xsl:when>
           <xsl:otherwise>
             <xsl:text>"</xsl:text>
@@ -138,9 +138,20 @@ Usage:
          <xsl:when test="@nsid='41619721@N02'">
           <xsl:text>@ivanavasilj</xsl:text>
         </xsl:when>
-        <xsl:when test="@username='emurray'">
+        <xsl:when test="@nsid='46567414@N00'">
+	  <xsl:text>@keoshi</xsl:text>
+	</xsl:when>
+        <xsl:when test="@username='todo'">
+	  <xsl:text>@skinnyghost</xsl:text>
+	</xsl:when>
+	<xsl:when test="@username='emurray'">
 	  <xsl:text>@ericmurray</xsl:text>
 	</xsl:when>
+
+	 <xsl:when test="@nsid='11536382@N03'">
+		<xsl:text>@superchill</xsl:text>
+	</xsl:when>
+
         <xsl:when test="string-length(@realname)&gt;0">
           <xsl:value-of select="@realname"/>
         </xsl:when>
