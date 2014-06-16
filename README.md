@@ -76,5 +76,10 @@ curl  "http://archive.geneontology.org/latest-termdb/go_daily-termdb.rdf-xml.gz"
 	xsltproc --novalid go2countchildren.xsl go.rdf - > count.tsv
 ```
 
+Extract **HTML** form:
+```
+$ curl -L google.com | xsltproc --html  stylesheets/html/html2curl.xsl -
+'&ie=ISO-8859-1&hl=fr&source=hp&q=&btnG=Recherche%20Google&btnI=J'ai%20de%20la%20chance&gbv=1'
+```
 
 
