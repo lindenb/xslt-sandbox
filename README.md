@@ -88,3 +88,12 @@ $ curl -L google.com | xsltproc --html  stylesheets/html/html2curl.xsl -
 '&ie=ISO-8859-1&hl=fr&source=hp&q=&btnG=Recherche%20Google&btnI=J'ai%20de%20la%20chance&gbv=1'
 ```
 
+convert **NCBI/EInfo** to **HTML**
+
+```
+xsltproc --novalid \
+	stylesheets/bio/ncbi/einfo2html.xsl \
+	http://eutils.ncbi.nlm.nih.gov/entrez/eutils/einfo.fcgi  > index.html
+```
+
+
