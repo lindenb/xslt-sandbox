@@ -106,13 +106,14 @@ Usage:
 			 		<xsl:apply-templates select="x:object[@name='items']" mode="object"/>
 			 		</x:object>
 			 	</xsl:when>
+
 			 	<xsl:otherwise>
-			 		<xsl:message terminate='yes'>BOUM <xsl:value-of select="$subtype"/></xsl:message>
+			 		<xsl:message terminate='yes'>BOUM2 <xsl:value-of select="$subtype"/></xsl:message>
 			 	</xsl:otherwise>
 			 </xsl:choose>
 	 	</xsl:when>
 	 	<xsl:otherwise>
-	 		<xsl:message terminate='yes'>BOUM <xsl:value-of select="$type"/></xsl:message>
+	 		<xsl:message terminate='yes'>BOUM1 <xsl:value-of select="$type"/></xsl:message>
 	 	</xsl:otherwise>
 	 </xsl:choose>
 </x:object>
