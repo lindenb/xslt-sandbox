@@ -30,8 +30,11 @@
 		<xsl:when test="head/meta[@property='twitter:creator']">
 			<xsl:value-of select="concat('@',head/meta[@property='twitter:creator']/@value)"/>
 		</xsl:when>
+		<xsl:when test="head/meta[@property='twitter:creator']/@value">
+			<xsl:value-of select="concat('@',head/meta[@property='twitter:creator']/@value)"/>
+		</xsl:when>
 		<xsl:otherwise>
-			<xsl:value-of select="head/meta[@property='five_hundred_pixels:author']/@value"/>
+			<xsl:value-of select="//a[@class='user_profile_link']"/>
 		</xsl:otherwise>
 	</xsl:choose>
 </xsl:element>

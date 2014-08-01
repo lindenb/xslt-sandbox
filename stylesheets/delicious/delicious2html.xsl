@@ -17,7 +17,7 @@ Motivation:
 
 -->
 <xsl:output method="html" />
-<xsl:param name="flickr_api_key"></xsl:param>
+
 
 <xsl:variable name="numposts" select="count(/posts/post)"/>
 
@@ -42,22 +42,23 @@ Motivation:
 	<xsl:attribute name="href"><xsl:value-of select="@href"/></xsl:attribute>
 <xsl:value-of select="@href"/></a> (<xsl:value-of select="@time"/>)
 
-<a  target="_blank">
-	<xsl:attribute name="href">https://delicious.com/link/<xsl:value-of select="@hash"/></xsl:attribute>
-<xsl:text>[delicious] </xsl:text>
-</a>
 
 
-<xsl:if test="string-length($flickr_api_key) &gt;0 and ( starts-with(@href,'http://www.flickr.com/photos/') or  starts-with(@href,'https://www.flickr.com/photos/'))">
+
+
+
+<xsl:if test=" starts-with(@href,'http://www.flickr.com/photos/') or  starts-with(@href,'https://www.flickr.com/photos/')">
 
 <xsl:variable name="u2" select="substring-before(substring-after(substring-after(@href,'/photos/'),'/'),'/')"/>
 
 <xsl:if test="string-length($u2) &gt;0">
-<xsl:variable name="u3" select="concat('http://api.flickr.com/services/rest/?method=flickr.photos.getInfo&amp;api_key=',$flickr_api_key,'&amp;format=rest&amp;photo_id=',$u2)"/>
-<xsl:message terminate="no"><xsl:value-of select="$u3"/></xsl:message>
-<xsl:apply-templates select="document($u3)/rsp/photo" mode="rsp"/>
+<a  target="_blank">
+	<xsl:attribute name="href">https://delicious.com/lindenb/search/<xsl:value-of select="$u2"/></xsl:attribute>
+<xsl:text>[delicious] </xsl:text>
+</a>
 </xsl:if>
-</xsl:if></p>
+</xsl:if>
+</p>
 <xsl:apply-templates/>
 
 </xsl:template>

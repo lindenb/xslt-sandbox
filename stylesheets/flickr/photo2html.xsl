@@ -92,6 +92,13 @@ Usage:
       <xsl:text>.</xsl:text>
       </i>
    </div>
+    <div>
+	<a href="http://tyeul.tumblr.com/">Tumblr</a><xsl:text> </xsl:text>
+	<a href="http://yokofakun.deviantart.com/">DeviantArt</a><xsl:text> </xsl:text>
+	<a href="https://www.facebook.com/kakaheska">Facebook</a><xsl:text> </xsl:text>
+	<a href="https://www.flickr.com/photos/lindenb/">Flickr</a><xsl:text> </xsl:text>
+	<a href="http://www.pinterest.com/yokofakun/drawings/">Pinterest</a>
+    </div>
 <xsl:text>
 
 
