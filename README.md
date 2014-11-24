@@ -96,4 +96,12 @@ xsltproc --novalid \
 	http://eutils.ncbi.nlm.nih.gov/entrez/eutils/einfo.fcgi  > index.html
 ```
 
+convert **Blast/XML** to a **HTML** matrix
+
+```
+xsltproc --novalid \
+	stylesheets/bio/ncbi/blast2matrix.xsl \
+	blastn.xml  > blast.html
+```
+
 
