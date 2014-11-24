@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<xsl:stylesheet
+	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+
+	xmlns:g="http://www.gexf.net/1.2draft"
+	xmlns:viz="http://www.gexf.net/1.1draft/viz"
+	version="1.1">
+<xsl:output method="text"/>
+
+<xsl:template match="/">
+<xsl:apply-templates select="g:gexf"/>
+</xsl:template>
+
+
+<xsl:template match="g:gexf">
+digraph G {
+<xsl:apply-templates select="g:graph"/>
+}
+</xsl:template>
+
+
+<xsl:template match="g:graph">
+<xsl:apply-templates select="g:nodes"/>
+<xsl:apply-templates select="g:edges"/>
+</xsl:template>
+
+<xsl:template match="g:nodes">
+<xsl:apply-templates select="g:node"/>
+</xsl:template>
+
+<xsl:template match="g:node">
+<xsl:value-of select="@id"/>
+<xsl:text>[</xsl:text>
+<xsl:choose>
+	<xsl:when test="@label=''">
+		<xsl:text>shape=point</xsl:text>
+	</xsl:when>
+	<xsl:otherwise>
+		<xsl:text>label="</xsl:text>
+		<xsl:value-of select="@label"/>
+		<xsl:text>"</xsl:text>
+	</xsl:otherwise>
+</xsl:choose>
+<xsl:text>];
+</xsl:text>
+</xsl:template>
+
+
+<xsl:template match="g:edges">
+<xsl:apply-templates select="g:edge"/>
+</xsl:template>
+
+<xsl:template match="g:edge">
+<xsl:value-of select="@source"/>
+<xsl:text> -&gt; </xsl:text>
+<xsl:value-of select="@target"/>
+<xsl:text> ;
+</xsl:text>
+</xsl:template>
+
+</xsl:stylesheet>
