@@ -227,6 +227,4 @@ transforms github pages to LaTeX
 </xsl:template>
 
 
-
-
 </xsl:stylesheet>

@@ -104,4 +104,22 @@ xsltproc --novalid \
 	blastn.xml  > blast.html
 ```
 
+convert **NCBI Taxonomy** to **newick**
 
+```
+$ xsltproc stylesheets/bio/ncbi/taxon2newick.xsl "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=9606,10090,9031,7227,562" 
+
+(((((((((((((((((((((((((((((((Homo_sapiens)Homo)Homininae)Hominidae)Hominoidea)Catarrhini)Simiiform
+es)Haplorrhini)Primates,((((((((Mus_musculus)Mus)Mus)Murinae)Muridae)Muroidea)Sciurognathi)Rodentia)
+Glires)Euarchontoglires)Boreoeutheria)Eutheria)Theria)Mammalia,(((((((((((((((Gallus_gallus)Gallus)P
+hasianinae)Phasianidae)Galliformes)Galloanserae)Neognathae)Aves)Coelurosauria)Theropoda)Saurischia)D
+inosauria)Archosauria)Archelosauria)Sauria)Sauropsida)Amniota)Tetrapoda)Dipnotetrapodomorpha)Sarcopt
+erygii)Euteleostomi)Teleostomi)Gnathostomata)Vertebrata)Craniata)Chordata)Deuterostomia,((((((((((((
+(((((((((((((((((Drosophila_melanogaster)melanogaster_subgroup)melanogaster_group)Sophophora)Drosoph
+ila)Drosophiliti)Drosophilina)Drosophilini)Drosophilinae)Drosophilidae)Ephydroidea)Acalyptratae)Schi
+zophora)Cyclorrhapha)Eremoneura)Muscomorpha)Brachycera)Diptera)Endopterygota)Neoptera)Pterygota)Dico
+ndylia)Insecta)Hexapoda)Pancrustacea)Mandibulata)Arthropoda)Panarthropoda)Ecdysozoa)Protostomia)Bila
+teria)Eumetazoa)Metazoa)Opisthokonta)Eukaryota,((((((Escherichia_coli)Escherichia)Enterobacteriaceae
+)Enterobacteriales)Gammaproteobacteria)Proteobacteria)Bacteria)cellular_organisms);
+
+```

@@ -36,11 +36,18 @@ Example:  curl -s "https://github.com/lindenb/jvarkit/wiki/SamJS" | xsltproc -\-
 
 <xsl:template match="body">
 <body style="font-family: sans-serif;color: rgb(51, 51, 51);">
+<xsl:choose>
+<xsl:when test="count(.//article) = 1">
+<xsl:apply-templates select=".//article"/>
+</xsl:when>
+<xsl:otherwise>
 <xsl:apply-templates select="//div[@class='markdown-body']|//article"/>
+</xsl:otherwise>
+</xsl:choose>
 </body>
 </xsl:template> 
 
-<xsl:template match="div[@class='markdown-body']|//article">
+<xsl:template match="article">
 <div style="font-size: 15px; line-height: 1.7;word-wrap: break-word;background: none repeat scroll 0% 0% rgb(255, 255, 255);">
 <xsl:apply-templates/>
 </div>
@@ -195,6 +202,13 @@ Example:  curl -s "https://github.com/lindenb/jvarkit/wiki/SamJS" | xsltproc -\-
 </span>
 </xsl:template>
 
+<xsl:template match="span[@class='gi']">
+<span style="color:green;">
+<xsl:apply-templates/>
+</span>
+</xsl:template>
+
+
 <xsl:template match="a[@href]">
 <a>
 <xsl:attribute name="href"><xsl:value-of select="@href"/></xsl:attribute>
@@ -252,6 +266,13 @@ word-wrap: break-word;
 <xsl:apply-templates/>
 </xsl:element>
 </xsl:template>
+
+<xsl:template match="blockquote">
+<blockquote style="border-left-color: #DDD;border-left-style: solid;border-left-width: 4px;box-sizing: border-box;color: #777; font-size: 16px;font-size-adjust: none;font-stretch: normal;font-style: normal;font-variant: normal;font-weight: 400;line-height: 25.6px;margin-bottom: 16px;margin-left: 0px;margin-right: 0px;margin-top: 0px;padding-bottom: 0px;padding-left: 15px;padding-right: 15px;padding-top: 0px;word-wrap: break-word;-moz-font-feature-settings: normal;-moz-font-language-override: normal;">
+<xsl:apply-templates/>
+</blockquote>
+</xsl:template>
+
 
 <xsl:template match="table">
 <table>
