@@ -24,9 +24,8 @@ Example:
 <xsl:variable name="allnodes" match="//Taxon" />
  
 <xsl:template match="/">
-<xsl:text>(</xsl:text>
 <xsl:apply-templates select="TaxaSet/Taxon[1]/LineageEx[1]/Taxon[1]" />
-<xsl:text>);
+<xsl:text>;
 </xsl:text>
 </xsl:template>
 
