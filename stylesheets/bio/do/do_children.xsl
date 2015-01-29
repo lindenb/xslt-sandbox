@@ -31,7 +31,7 @@ Usage :
 <xsl:param name="ID"/>
 
 <xsl:template match="/">
-<xsl:text>#ID   LABEL   URI   DESCRIPTION
+<xsl:text>#ID	LABEL	URI	DESCRIPTION
 </xsl:text>
 <xsl:apply-templates select="rdf:RDF/owl:Class[oboInOwl:id=$ID]"/>
 </xsl:template>
@@ -46,7 +46,7 @@ Usage :
 <xsl:value-of select="rdfs:label"/>
 <xsl:text>	</xsl:text>
 <xsl:value-of select="rdfs:subClassOf/@rdf:resource"/>
-<xsl:text>  </xsl:text>
+<xsl:text>	</xsl:text>
 <xsl:apply-templates select="obo:IAO_0000115[1]"/>
 <xsl:text>
 </xsl:text>
