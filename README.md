@@ -123,3 +123,24 @@ teria)Eumetazoa)Metazoa)Opisthokonta)Eukaryota,((((((Escherichia_coli)Escherichi
 )Enterobacteriales)Gammaproteobacteria)Proteobacteria)Bacteria)cellular_organisms);
 
 ```
+
+Get all the child terms in disease ontology under DOID:2914 ( immune system disease ) http://disease-ontology.org/ .
+
+
+
+```bash
+$ curl "http://www.berkeleybop.org/ontologies/doid.owl" |  xsltproc --stringparam ID "DOID:2914" do_children.xsl -
+```
+
+```tsv
+#ID   LABEL   URI   DESCRIPTION
+DOID:2914	immune system disease	http://purl.obolibrary.org/obo/DOID_7  A disease of anatomical entity that is located_in the immune system.
+DOID:0060056	hypersensitivity reaction disease	http://purl.obolibrary.org/obo/DOID_2914 
+DOID:1205	hypersensitivity reaction type I disease	http://purl.obolibrary.org/obo/DOID_0060056  An immune system disease that is an exaggerated immune response to allergens, such as insect venom, dust mites, pollen, pet dander, drugs or some foods.
+DOID:3044	food allergy	http://purl.obolibrary.org/obo/DOID_1205  A hypersensitivity reaction type I disease that is an abnormal response to a food, triggered by the body's immune system.
+DOID:0060057	gluten allergic reaction	http://purl.obolibrary.org/obo/DOID_3044 
+DOID:3660	wheat allergic reaction	http://purl.obolibrary.org/obo/DOID_3044 
+DOID:4376	milk allergic reaction	http://purl.obolibrary.org/obo/DOID_3044  A food allergy that results in adverse immune reaction to one or more of the proteins in cow's milk and/or the milk of other animals, which are normally harmless to the non-allergic individual.
+DOID:4377	egg allergy	http://purl.obolibrary.org/obo/DOID_3044  A food allergy that is an allergy or hypersensitivity to dietary substances from the yolk or whites of eggs, causing an overreaction of the immune system which may lead to severe physical symptoms.
+DOID:4378	peanut allergic reaction	http://purl.obolibrary.org/obo/DOID_3044  A food allergy that is an allergy or hypersensitivity to dietary substances from peanuts causing an overreaction of the immune system which in a small percentage of people may lead to severe physical symptoms.
+```

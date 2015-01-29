@@ -158,6 +158,9 @@ Usage:
 	 <xsl:when test="@nsid='11536382@N03'">
 		<xsl:text>@superchill</xsl:text>
 	</xsl:when>
+	 <xsl:when test="@nsid='50841206@N02'">
+		<xsl:text>@jaydefehr</xsl:text>
+	</xsl:when>
 
         <xsl:when test="string-length(@realname)&gt;0">
           <xsl:value-of select="@realname"/>
