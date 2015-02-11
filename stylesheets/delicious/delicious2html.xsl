@@ -37,7 +37,6 @@ Motivation:
 </xsl:template>
 
 <xsl:template match="post">
-<xsl:message terminate="no"> <xsl:value-of select="count(preceding-sibling::*)+1"/> / <xsl:value-of select="$numposts"/></xsl:message>
 <p><b><xsl:value-of select="@description"/></b> : <a>
 	<xsl:attribute name="href"><xsl:value-of select="@href"/></xsl:attribute>
 <xsl:value-of select="@href"/></a> (<xsl:value-of select="@time"/>)
@@ -46,8 +45,8 @@ Motivation:
 
 
 
-
-<xsl:if test=" starts-with(@href,'http://www.flickr.com/photos/') or  starts-with(@href,'https://www.flickr.com/photos/')">
+<xsl:choose>
+<xsl:when test=" starts-with(@href,'http://www.flickr.com/photos/') or  starts-with(@href,'https://www.flickr.com/photos/')">
 <xsl:variable name="u2" select="substring-before(substring-after(substring-after(@href,'/photos/'),'/'),'/')"/>
 <xsl:if test="string-length($u2) &gt;0">
 <a  target="_blank">
@@ -55,7 +54,26 @@ Motivation:
 <xsl:text>[delicious] </xsl:text>
 </a>
 </xsl:if>
+</xsl:when>
+<xsl:when test=" starts-with(@href,'https://500px.com/photo/') or  starts-with(@href,'http://500px.com/photo/')">
+<xsl:variable name="u2" select="substring-after(substring-after(@href,'/photo/'),'/')"/>
+<xsl:if test="string-length($u2) &gt;0">
+<a  target="_blank">
+	<xsl:attribute name="href">https://delicious.com/lindenb/search/<xsl:value-of select="$u2"/></xsl:attribute>
+<xsl:text>[delicious] </xsl:text>
+</a>
 </xsl:if>
+</xsl:when>
+<xsl:when test="starts-with(@href,'http://www.deviantart.com/art/')">
+<xsl:variable name="u2" select="substring-after(@href,'/art/')"/>
+<xsl:if test="string-length($u2) &gt;0">
+<a  target="_blank">
+	<xsl:attribute name="href">https://delicious.com/lindenb/search/<xsl:value-of select="$u2"/></xsl:attribute>
+<xsl:text>[delicious] </xsl:text>
+</a>
+</xsl:if>
+</xsl:when>
+</xsl:choose>
 
 <xsl:if test=" starts-with(@href,'http://500px.com/photo/')">
 <xsl:variable name="u2" select="substring-before(substring-after(@href,'/photo/'),'/')"/>

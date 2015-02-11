@@ -26,7 +26,89 @@ Usage :
 
 
 <xsl:template match="plugin">
+
+<xsl:variable name="outdir"><xsl:value-of select="concat($base.dir,'/')"/><xsl:apply-templates select="." mode="out.dir"/></xsl:variable>
+
 <xsl:apply-templates select="node"/>
+
+
+<xsl:document href="{$outdir}/AbstractNodeModel.java" method="text">
+package <xsl:apply-templates select="." mode="package"/>;
+
+import java.io.File;
+import java.io.IOException;
+
+import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.NodeModel;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettingsWO;
+
+@javax.annotation.Generated("jvarkit")
+public abstract class AbstractNodeModel
+	extends org.knime.core.node.NodeModel
+	{
+	<xsl:apply-templates select="property"/>
+	
+	protected AbstractNodeModelNodeModel(int inport,int outport)
+		{
+		/* super(inport,outport) */
+		super(inport,outport);
+		}
+	
+	 protected DataTableSpec createOutTableSpec()
+    	{
+    	DataTableSpec tspecs[]=new DataTableSpec[ this.getNrOutPorts() ];
+    	for(int i=0;i &lt; tspecs.length; ++i)
+    		{
+    		tspec[ i ] =  createOutDataTableSpec(i);
+    		}
+    	return new DataTableSpec(tspecs);
+    	}
+    
+	protected abstract DataTableSpec createOutTableSpec(int index);
+	
+	
+	@Override
+	protected void loadInternals(File arg0, ExecutionMonitor arg1)
+			throws IOException, CanceledExecutionException
+		{
+		}
+	
+	@Override
+	protected void loadValidatedSettingsFrom(NodeSettingsRO arg0)
+			throws InvalidSettingsException
+		{
+		}
+	
+	@Override
+	protected void reset()
+		{
+		getLogger().info("reset "+getClass().getName());
+		}
+	@Override
+	protected void saveInternals(File dir, ExecutionMonitor executionMonitor)
+			throws IOException, CanceledExecutionException
+		{
+		getLogger().info("saveInternals "+getClass().getName());
+		}
+	
+	/* Adds to the given NodeSettings the model specific settings. The settings don't need to be complete or consistent.
+		If, right after startup, no valid settings are available this method can write either nothing or invalid settings.
+		*/
+	@Override
+	protected void saveSettingsTo(NodeSettingsWO settings) {
+		getLogger().info("saveSettingsTo "+getClass().getName());
+		}
+	@Override
+	protected void validateSettings(NodeSettingsRO settings)
+			throws InvalidSettingsException {
+		getLogger().info("validateSettings "+getClass().getName());
+		}
+	}
+
+</xsl:document>
 
 <xsl:document href="{$base.dir}/plugin.xml" method="xml">
 <xsl:processing-instruction name="eclipse"> version="3.0" </xsl:processing-instruction >
@@ -51,10 +133,7 @@ Usage :
 
 
 <xsl:template match="node">
-
-<xsl:message terminate="no">X1</xsl:message>
 <xsl:variable name="outdir"><xsl:value-of select="concat($base.dir,'/')"/><xsl:apply-templates select="." mode="out.dir"/></xsl:variable>
-<xsl:message terminate="no">X2</xsl:message>
 <xsl:variable name="node.name"><xsl:apply-templates select="." mode="name"/></xsl:variable>
 
 <xsl:message terminate="no">node name <xsl:value-of select="$node.name"/></xsl:message>
@@ -199,7 +278,6 @@ public class <xsl:apply-templates select="." mode="name"/>NodeFactory
 
 </xsl:document>
 
-<xsl:message terminate="no">X5</xsl:message>
 
 <xsl:document href="{$outdir}/{$node.name}NodeDialog.java" method="text">
 package <xsl:apply-templates select="." mode="package"/>;
@@ -240,9 +318,8 @@ public class <xsl:apply-templates select="." mode="name"/>NodeDialog
 	}
 </xsl:document>
 
-<xsl:message terminate="no">X6</xsl:message>
 
-<xsl:document href="{$outdir}/{$node.name}NodeModel.java" method="text">
+<xsl:document href="{$outdir}/Abstract{$node.name}NodeModel.java" method="text">
 package <xsl:apply-templates select="." mode="package"/>;
 
 import java.io.File;
@@ -256,28 +333,39 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsWO;
 
 @javax.annotation.Generated("jvarkit")
-public class <xsl:apply-templates select="." mode="name"/>Model
-	extends org.knime.core.node.NodeModel
+public abstract class Abstract<xsl:apply-templates select="." mode="name"/>NodeModel
+extends <xsl:choose>
+	<xsl:when test="string-length(@extends)&gt;0">
+		<xsl:value-of select="@extends"/>
+	</xsl:when>
+	<xsl:otherwise>
+	 <xsl:apply-templates select=".." mode="package"/>
+	 <xsl:text>.AbstractNodeModel</xsl:text>
+	</xsl:otherwise>
+	</xsl:choose>
 	{
 	<xsl:apply-templates select="property"/>
 	
-	public <xsl:apply-templates select="." mode="name"/>Model()
+	protected Abstract<xsl:apply-templates select="." mode="name"/>NodeModel()
 		{
 		/* super(inport,outport) */
 		super( <xsl:value-of select="count(inPort)"/>, <xsl:value-of select="count(outPort)"/> );
 		}
 	
-	 private DataTableSpec createOutTableSpec()
+	@Override
+    protected DataTableSpec createOutTableSpec(int index)
     	{
-    	DataTableSpec tspec[]=new DataTableSpec[<xsl:value-of select="count(outPort)"/>];
-    	<xsl:for-each select="outPort">
-    	tspec[ <xsl:value-of select="position() -1 "/> ] = <xsl:apply-templates select="." mode="create.table.spec.decl"/>();
-    	</xsl:for-each>
-    	return new DataTableSpec(tspec);
+    	switch(index)
+    		{
+    		<xsl:for-each select="outPort">case <xsl:value-of select="position() -1 "/> : return _createOutTableSpec<xsl:value-of select="position() -1 "/>();
+    		</xsl:for-each>
+    		default: throw new IllegalStateException();
+    		}
     	}
+    	
 	<xsl:for-each select="outPort">
 	
-	private DataTableSpec <xsl:apply-templates select="." mode="create.table.spec.decl"/>()
+	protected DataTableSpec _createOutTableSpec<xsl:value-of select="position() -1 "/>()
 		{
 		DataColumnSpec colspec;
 		DataColumnSpec colspecs[]=new DataColumnSpec[ <xsl:value-of select="count(column)"/> ];
@@ -290,6 +378,7 @@ public class <xsl:apply-templates select="." mode="name"/>Model
 	
 	</xsl:for-each>
 	
+	<xsl:apply-templates select="property" mode="getter"/>
 	
     private java.util.List&lt;SettingsModel&gt; getSettingsModel() {
     	java.util.List&lt;SettingsModel&gt; L=new java.util.ArrayList&lt;SettingsModel&gt;( <xsl:value-of select="count(column)"/> );
@@ -298,45 +387,12 @@ public class <xsl:apply-templates select="." mode="name"/>Model
     	</xsl:for-each>
     	return L;
     	}
-
 	
-	@Override
-	protected void loadInternals(File arg0, ExecutionMonitor arg1)
-			throws IOException, CanceledExecutionException
-		{
-		}
-	
-	@Override
-	protected void loadValidatedSettingsFrom(NodeSettingsRO arg0)
-			throws InvalidSettingsException
-		{
-		}
-	
-	@Override
-	protected void reset()
-		{
-		getLogger().info("reset "+getClass().getName());
-		}
-	@Override
-	protected void saveInternals(File dir, ExecutionMonitor executionMonitor)
-			throws IOException, CanceledExecutionException
-		{
-		getLogger().info("saveInternals "+getClass().getName());
-		}
-	@Override
-	protected void saveSettingsTo(NodeSettingsWO settings) {
-		getLogger().info("saveSettingsTo "+getClass().getName());
-		}
-	@Override
-	protected void validateSettings(NodeSettingsRO settings)
-			throws InvalidSettingsException {
-		getLogger().info("validateSettings "+getClass().getName());
-		}
 	}
 
 </xsl:document>
 
-<xsl:message terminate="no">X100</xsl:message>
+
 
 </xsl:template>
 
@@ -347,7 +403,13 @@ public class <xsl:apply-templates select="." mode="name"/>Model
 	<xsl:otherwise><xsl:text>generated</xsl:text></xsl:otherwise>
 </xsl:choose>
 </xsl:template>
- 
+
+<xsl:template match="plugin" mode="out.dir">
+<xsl:variable name="package"><xsl:apply-templates select="." mode="package"/></xsl:variable>
+<xsl:value-of select="concat('./',translate($package,'.','/'),'/')"/>
+</xsl:template>
+
+
 <xsl:template match="node" mode="package">
 <xsl:choose>
 	<xsl:when test="@package"><xsl:value-of select="@package"/></xsl:when>
@@ -362,16 +424,14 @@ public class <xsl:apply-templates select="." mode="name"/>Model
 </xsl:template>
 
 <xsl:template match="node" mode="name">
-<xsl:message terminate="no">XXXXXXXXXX1</xsl:message>
 <xsl:call-template name="titleize">
 	<xsl:with-param name="s">
 		<xsl:choose>
 			<xsl:when test="@name"><xsl:value-of select="@name"/></xsl:when>
-			<xsl:otherwise><xsl:message terminate="no">XXXXXXXXXX4</xsl:message><xsl:value-of select="generate-id(.)"/><xsl:message terminate="no">XXXXXXXXXX5</xsl:message></xsl:otherwise>
+			<xsl:otherwise><xsl:value-of select="generate-id(.)"/></xsl:otherwise>
 		</xsl:choose>
 	</xsl:with-param>
 </xsl:call-template>
-<xsl:message terminate="no">XXXXXXXXXX2</xsl:message>
 </xsl:template>
 
 
@@ -382,7 +442,7 @@ public class <xsl:apply-templates select="." mode="name"/>Model
 
 
 
-<xsl:template match="property">
+<xsl:template match="property" mode="todo2">
 
 static final <xsl:apply-templates select="."/> <xsl:apply-templates select="." mode="default.name.decl"/>=<xsl:apply-templates select="." mode="default.name.value"/>;
 static final String DEFAULT_FILENAME_PROPERTY="out.bed";
@@ -416,8 +476,5 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 </xsl:template>
 
 
-<xsl:template match="outPort" mode="create.table.spec.decl">
-<xsl:value-of select="concat('_',generate-id(.),'CreateTableSpec')"/>
-</xsl:template>
 
 </xsl:stylesheet>
