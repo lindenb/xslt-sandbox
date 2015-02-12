@@ -33,6 +33,9 @@ Usage :
 
 
 <xsl:document href="{$outdir}/AbstractNodeModel.java" method="text">
+/**
+<xsl:value-of select="$apache2.license"/>
+**/
 package <xsl:apply-templates select="." mode="package"/>;
 
 import java.io.File;
@@ -40,10 +43,13 @@ import java.io.IOException;
 
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
-import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.port.PortType;
+import org.knime.core.data.DataTableSpec;
+
+
 
 @javax.annotation.Generated("jvarkit")
 public abstract class AbstractNodeModel
@@ -51,23 +57,29 @@ public abstract class AbstractNodeModel
 	{
 	<xsl:apply-templates select="property"/>
 	
-	protected AbstractNodeModelNodeModel(int inport,int outport)
+	protected AbstractNodeModel(int inport,int outport)
 		{
 		/* super(inport,outport) */
 		super(inport,outport);
 		}
 	
-	 protected DataTableSpec createOutTableSpec()
+	protected AbstractNodeModel(PortType[] inPortTypes, PortType[] outPortTypes)
+		{
+		super(inPortTypes, outPortTypes);
+		}
+
+	
+	protected DataTableSpec[] createOutTableSpec()
     	{
     	DataTableSpec tspecs[]=new DataTableSpec[ this.getNrOutPorts() ];
     	for(int i=0;i &lt; tspecs.length; ++i)
     		{
-    		tspec[ i ] =  createOutDataTableSpec(i);
+    		tspecs[ i ] =  createOutDataTableSpec(i);
     		}
-    	return new DataTableSpec(tspecs);
+    	return tspecs;
     	}
     
-	protected abstract DataTableSpec createOutTableSpec(int index);
+	protected abstract DataTableSpec createOutDataTableSpec(int index);
 	
 	
 	@Override
@@ -174,13 +186,11 @@ public abstract class AbstractNodeModel
 </knimeNode>
 </xsl:document >
 
-<xsl:message terminate="no">X3</xsl:message>
 
-<xsl:document href="{$outdir}/{$node.name}NodePlugin.java" method="text">
-/* @(#)$RCSfile$ 
- * $Revision$ $Date$ $Author$
- *
- */
+
+<xsl:document href="{$outdir}/{$node.name}NodePlugin.java" method="text">/**
+<xsl:value-of select="$apache2.license"/>
+**/
 package <xsl:apply-templates select="." mode="package"/>;
 
 import org.eclipse.core.runtime.Plugin;
@@ -235,18 +245,20 @@ public class  <xsl:apply-templates select="." mode="name"/>NodePlugin extends Pl
 
 </xsl:document>
 
-<xsl:message terminate="no">X4</xsl:message>
 
-<xsl:document href="{$outdir}/{$node.name}NodeFactory.java" method="text">
+<xsl:document href="{$outdir}/{$node.name}NodeFactory.java" method="text">/**
+<xsl:value-of select="$apache2.license"/>
+**/
 package <xsl:apply-templates select="." mode="package"/>;
 
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
+import org.knime.core.data.DataTableSpec;
 
 @javax.annotation.Generated("jvarkit")
 public class <xsl:apply-templates select="." mode="name"/>NodeFactory
-        extends NodeFactory&lt;<xsl:apply-templates select="." mode="name"/>Model&gt; {
+        extends NodeFactory&lt;<xsl:apply-templates select="." mode="name"/>NodeModel&gt; {
 	
     @Override
     public <xsl:apply-templates select="." mode="name"/>NodeModel createNodeModel() {
@@ -259,7 +271,7 @@ public class <xsl:apply-templates select="." mode="name"/>NodeFactory
     }
 	
     @Override
-    public NodeView&lt;<xsl:apply-templates select="." mode="name"/>Model&gt; createNodeView(final int viewIndex,
+    public NodeView&lt;<xsl:apply-templates select="." mode="name"/>NodeModel&gt; createNodeView(final int viewIndex,
             final <xsl:apply-templates select="." mode="name"/>NodeModel nodeModel) {
         throw new IllegalStateException();
     }
@@ -279,58 +291,34 @@ public class <xsl:apply-templates select="." mode="name"/>NodeFactory
 </xsl:document>
 
 
-<xsl:document href="{$outdir}/{$node.name}NodeDialog.java" method="text">
+<xsl:document href="{$outdir}/{$node.name}NodeDialog.java" method="text">/**
+<xsl:value-of select="$apache2.license"/>
+**/
 package <xsl:apply-templates select="." mode="package"/>;
 
 import org.knime.core.node.defaultnodesettings.DefaultNodeSettingsPane;
-import org.knime.core.node.defaultnodesettings.DialogComponentMultiLineString;
-import org.knime.core.node.defaultnodesettings.DialogComponentNumber;
-import org.knime.core.node.defaultnodesettings.DialogComponentStringSelection;
-import org.knime.core.node.defaultnodesettings.SettingsModelInteger;
-import org.knime.core.node.defaultnodesettings.SettingsModelString;
-
-
 
 @javax.annotation.Generated("jvarkit")
 public class <xsl:apply-templates select="." mode="name"/>NodeDialog
 	extends DefaultNodeSettingsPane
 	{
-    protected <xsl:apply-templates select="." mode="name"/>NodeDialog()
+    public <xsl:apply-templates select="." mode="name"/>NodeDialog()
     	{
     	<xsl:apply-templates select="property" mode="dialog"/>
-    	addDialogComponent(new DialogComponentMultiLineString(
-                new SettingsModelString( <xsl:apply-templates select="." mode="name"/>NodeModel.NCBI_QUERY_PROPERTY,<xsl:apply-templates select="." mode="name"/>NodeModel.NCBI_QUERY_DEFAULT)
-                    ,"Entrez Query:",false,80,25));
-
-    	addDialogComponent(new DialogComponentStringSelection(
-    			new SettingsModelString(<xsl:apply-templates select="." mode="name"/>NodeModel.DB_IN_PROPERTY, <xsl:apply-templates select="." mode="name"/>NodeModel.DB_IN_DEFAULT),
-    			"Database Input",
-    			EInfo.getDatabases()
-    			));
-    	
-    
-    	
-    	addDialogComponent(new DialogComponentNumber(
-    			new SettingsModelInteger(<xsl:apply-templates select="." mode="name"/>NodeModel.LIMIT_PROPERTY, <xsl:apply-templates select="." mode="name"/>NodeModel.LIMIT_DEFAULT),
-    			"Limit",1,10
-    			));
     	}
 	}
 </xsl:document>
 
 
-<xsl:document href="{$outdir}/Abstract{$node.name}NodeModel.java" method="text">
+<xsl:document href="{$outdir}/Abstract{$node.name}NodeModel.java" method="text">/**
+<xsl:value-of select="$apache2.license"/>
+**/
 package <xsl:apply-templates select="." mode="package"/>;
 
-import java.io.File;
-import java.io.IOException;
+import org.knime.core.node.defaultnodesettings.SettingsModel;
+import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DataColumnSpec;
 
-import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.ExecutionMonitor;
-import org.knime.core.node.NodeModel;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeSettingsWO;
 
 @javax.annotation.Generated("jvarkit")
 public abstract class Abstract<xsl:apply-templates select="." mode="name"/>NodeModel
@@ -344,7 +332,7 @@ extends <xsl:choose>
 	</xsl:otherwise>
 	</xsl:choose>
 	{
-	<xsl:apply-templates select="property"/>
+	<xsl:apply-templates select="property" />
 	
 	protected Abstract<xsl:apply-templates select="." mode="name"/>NodeModel()
 		{
@@ -353,7 +341,7 @@ extends <xsl:choose>
 		}
 	
 	@Override
-    protected DataTableSpec createOutTableSpec(int index)
+    protected DataTableSpec createOutDataTableSpec(int index)
     	{
     	switch(index)
     		{
@@ -365,6 +353,7 @@ extends <xsl:choose>
     	
 	<xsl:for-each select="outPort">
 	
+	/** create DataTableSpec for outport '0' <xsl:apply-templates select="." mode="label"/> */
 	protected DataTableSpec _createOutTableSpec<xsl:value-of select="position() -1 "/>()
 		{
 		DataColumnSpec colspec;
@@ -380,16 +369,35 @@ extends <xsl:choose>
 	
 	<xsl:apply-templates select="property" mode="getter"/>
 	
-    private java.util.List&lt;SettingsModel&gt; getSettingsModel() {
+    protected java.util.List&lt;SettingsModel&gt; getSettingsModel() {
     	java.util.List&lt;SettingsModel&gt; L=new java.util.ArrayList&lt;SettingsModel&gt;( <xsl:value-of select="count(column)"/> );
     	<xsl:for-each select="property">
-    	L.add(this.<xsl:apply-templates select="." mode="var.name"/>);
+    	L.add(this.<xsl:apply-templates select="." mode="variable.name"/>);
     	</xsl:for-each>
     	return L;
     	}
 	
 	}
 
+</xsl:document>
+
+
+
+
+<xsl:document href="{$outdir}/{$node.name}NodeModel.java" method="text">/*
+<xsl:value-of select="$apache2.license"/>
+*/
+package <xsl:apply-templates select="." mode="package"/>;
+
+
+@javax.annotation.Generated("jvarkit")
+public class <xsl:apply-templates select="." mode="name"/>NodeModel
+	extends Abstract<xsl:apply-templates select="." mode="name"/>NodeModel
+	{
+	public <xsl:apply-templates select="." mode="name"/>NodeModel()
+		{
+		}
+	}
 </xsl:document>
 
 
@@ -441,6 +449,13 @@ extends <xsl:choose>
 </xsl:template>
 
 
+<xsl:template match="property" mode="label">
+	<xsl:choose>
+		<xsl:when test="label"><xsl:value-of select="label"/></xsl:when>
+		<xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
+	</xsl:choose>
+</xsl:template>
+
 
 <xsl:template match="property" mode="todo2">
 
@@ -451,30 +466,80 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 
 <xsl:template match="property">
 <xsl:choose>
-<xsl:when test="@type='int'">org.knime.core.node.defaultnodesettings.SettingsModelInteger(<xsl:apply-templates select="." mode="xx"/>,<xsl:apply-templates select="." mode="xxx"/>);</xsl:when>
-<xsl:otherwise>org.knime.core.node.defaultnodesettings.SettingsModelString(<xsl:apply-templates select="." mode="xx"/>,<xsl:apply-templates select="." mode="xxx"/>)</xsl:otherwise>
+<xsl:when test="@type='int'">
+	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
+	final static int <xsl:apply-templates select="." mode="default.name"/> = <xsl:choose>
+			<xsl:when test="@default"><xsl:value-of select="@default"/></xsl:when>
+			<xsl:otherwise>0</xsl:otherwise>
+		</xsl:choose>;
+
+	/** <xsl:apply-templates select="." mode="label"/> */
+	private org.knime.core.node.defaultnodesettings.SettingsModelInteger <xsl:apply-templates select="." mode="variable.name"/> = 
+		new  org.knime.core.node.defaultnodesettings.SettingsModelInteger(
+			<xsl:apply-templates select="." mode="config.name"/>,
+			<xsl:apply-templates select="." mode="default.name"/>
+			);
+		</xsl:when>
+<xsl:otherwise>
+	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
+	final static String <xsl:apply-templates select="." mode="default.name"/> = <xsl:choose>
+			<xsl:when test="@default">"<xsl:value-of select="@default"/>"</xsl:when>
+			<xsl:otherwise>""</xsl:otherwise>
+		</xsl:choose>;
+
+	/** <xsl:apply-templates select="." mode="label"/> */
+	private org.knime.core.node.defaultnodesettings.SettingsModelString <xsl:apply-templates select="." mode="variable.name"/> = 
+		new  org.knime.core.node.defaultnodesettings.SettingsModelString(
+			<xsl:apply-templates select="." mode="config.name"/>,
+			<xsl:apply-templates select="." mode="default.name"/>
+			);
+
+</xsl:otherwise>
 </xsl:choose>
 </xsl:template>
 
-<xsl:template match="property" mode="default.value">
-	<xsl:choose>
-		<xsl:when test='@default'>
-			<xsl:choose>
-				<xsl:when test="@type='string'"><xsl:value-of select='.'/></xsl:when>
-				<xsl:otherwise>org.knime.core.node.defaultnodesettings.SettingsModelString(<xsl:apply-templates select="." mode="xxx"/>,<xsl:apply-templates select="." mode="xxx"/>)</xsl:otherwise>
-			</xsl:choose>
-		</xsl:when>
-		<xsl:otherwise>
-			<xsl:choose>
-				<xsl:when test="@type='boolean'">false</xsl:when>
-				<xsl:when test="@type='int'">0</xsl:when>
-				<xsl:when test="@type='string'">""</xsl:when>
-				<xsl:otherwise></xsl:otherwise>
-			</xsl:choose>
-		</xsl:otherwise>
-	</xsl:choose>
+
+<xsl:template match="property" mode="dialog">
+<xsl:choose>
+<xsl:when test="@type='int'">
+		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentNumber(
+					new org.knime.core.node.defaultnodesettings.SettingsModelInteger(
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="config.name"/>,
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="default.name"/>
+						),
+					"<xsl:apply-templates select="." mode="label"/>",1,10
+					));
+</xsl:when>
+<xsl:otherwise>
+		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentMultiLineString(
+					new org.knime.core.node.defaultnodesettings.SettingsModelString(
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="config.name"/>,
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="default.name"/>
+						),
+					"<xsl:apply-templates select="." mode="label"/>",false,80,25
+					));
+
+</xsl:otherwise>
+</xsl:choose>
 </xsl:template>
 
 
+<xsl:template match="property" mode="variable.name">
+<xsl:value-of select="concat('m_',generate-id(.))"/>
+</xsl:template>
+
+<xsl:template match="property" mode="config.name">
+<xsl:text>CONFIG_</xsl:text>
+<xsl:call-template name="touppercase">
+ <xsl:with-param name="s" select="@name"/>
+</xsl:call-template>
+</xsl:template>
+
+<xsl:template match="property" mode="default.name">
+<xsl:text>DEFAULT_</xsl:text>
+<xsl:call-template name="touppercase">
+ <xsl:with-param name="s" select="@name"/>
+</xsl:call-template>
+</xsl:template>
 
 </xsl:stylesheet>

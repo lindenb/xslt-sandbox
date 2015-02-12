@@ -163,13 +163,6 @@ indexed_reference: $(INDEXED_REFERENCE)
 #coverage.tsv : ensembl.exons.bed  $(foreach S,$(SAMPLES),$(OUTDIR)/$(S)$(BAMSUFFIX).bam )
 #	${VARKIT}/beddepth $(foreach S,$(SAMPLES),-f $(OUTDIR)/$(S)$(BAMSUFFIX).bam ) &lt; $&lt; &gt; $@
 
-ensembl.exons.bed:
-	 curl -s -d 'query=<![CDATA[<?xml version="1.0" encoding="UTF-8"?><Query virtualSchemaName="default" formatter="TSV" header="0" uniqueRows="0" count="" datasetConfigVersion="0.6" ><Dataset name="hsapiens_gene_ensembl" interface="default" ><Attribute name="chromosome_name" /><Attribute name="exon_chrom_start" /><Attribute name="exon_chrom_end" /></Dataset></Query>]]>' "http://www.biomart.org/biomart/martservice/result" |\
-	grep -v '_' |grep -v 'GL' |grep -v 'MT' |\
-	awk -F '	' '{S=int($$2)-100; if(S&lt;0) S=0; printf("%s\t%d\t%d\n",$$1,S,int($$3)+100);}' |\
-	sort -t '	' -k1,1 -k2,2n -k3,3n |\
-	$(BEDTOOLS)/mergeBed -d 100 -i - &gt; $@
-	
 
 
 #bams:bams$(BAMSUFFIX)
@@ -220,11 +213,33 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 	$(call sizedb,$@)
 
 
+ensembl.exons.bed:
+	 curl -s -d 'query=<![CDATA[<?xml version="1.0" encoding="UTF-8"?><Query virtualSchemaName="default" formatter="TSV" header="0" uniqueRows="0" count="" datasetConfigVersion="0.6" ><Dataset name="hsapiens_gene_ensembl" interface="default" ><Attribute name="chromosome_name" /><Attribute name="exon_chrom_start" /><Attribute name="exon_chrom_end" /></Dataset></Query>]]>' "http://www.biomart.org/biomart/martservice/result" |\
+	grep -v '_' |grep -v 'GL' |grep -v 'MT' |\
+	sort -t '	' -k1,1 -k2,2n -k3,3n &gt; $@
+
+
+#
+# extends the bed by 500 by default
+#
+ifndef extend.bed
+extend.bed=500
+endif
+
+
+#
+# an extended version of the capture, will be used for recalibration
+#
+capture500.bed: <xsl:call-template name="capture.bed"/>
+	cut -d '	' -f1,2,3 $&lt; |\
+	awk -F '	'  -v x=$(extend.bed) '{S=int($$2)-in(x); if(S&lt;0) S=0; printf("%s\t%d\t%d\n",$$1,S,int($$3)+int(x));}' |\
+	sort -t '	' -k1,1 -k2,2n -k3,3n |\
+	$(BEDTOOLS)/mergeBed -d $(extend.bed) -i - &gt; $@
 
 
 <xsl:for-each select="sample">
 
-<xsl:apply-templates select="." mode="coverage"/>: $(call indexed_bam,<xsl:apply-templates select="." mode="recal"/>) ensembl.exons.bed
+<xsl:apply-templates select="." mode="coverage"/>: $(call indexed_bam,<xsl:apply-templates select="." mode="recal"/>) <xsl:call-template name="capture.bed"/>
 	$(call timebegindb,$@)
 	$(JAVA) $(GATK.jvm) -jar $(GATK.jar) $(GATK.flags) \
 		-R $(REF) \
@@ -295,7 +310,7 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 
 
 
-<xsl:apply-templates select="." mode="recal"/> : $(call indexed_bam,<xsl:apply-templates select="." mode="markdup"/>) ensembl.exons.bed
+<xsl:apply-templates select="." mode="recal"/> : $(call indexed_bam,<xsl:apply-templates select="." mode="markdup"/>) capture500.bed
 	$(call timebegindb,$@_countCovariates)
 	$(JAVA) $(GATK.jvm) -jar $(GATK.jar) $(GATK.flags) \
 		-T BaseRecalibrator \
@@ -322,7 +337,7 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 	$(call sizedb,$@)
 	$(DELETEFILE) $&lt; $@.recal_data.grp
 
-<xsl:apply-templates select="." mode="realigned"/>: $(call indexed_bam,<xsl:apply-templates select="." mode="merged"/>) ensembl.exons.bed
+<xsl:apply-templates select="." mode="realigned"/>: $(call indexed_bam,<xsl:apply-templates select="." mode="merged"/>) capture500.bed
 		$(call timebegindb,$@_targetcreator)
 		$(JAVA) $(GATK.jvm) -jar $(GATK.jar) $(GATK.flags) \
 			-T RealignerTargetCreator \
@@ -556,5 +571,14 @@ $(OUTDIR)/variations.gatk.vcf.gz: $(call indexed_bam,<xsl:for-each select="sampl
 
 </xsl:text>
 </xsl:template>
+
+<!-- provides a BED for the capture --> 
+<xsl:template name="capture.bed">
+ <xsl:choose>
+  <xsl:when test="//capture/bed/@path"><xsl:value-of select="//capture/bed/@path"/></xsl:when>
+  <xsl:otherwise>ensembl.exons.bed</xsl:otherwise>
+ </xsl:choose>
+</xsl:template>
+
 
 </xsl:stylesheet>

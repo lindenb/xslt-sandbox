@@ -4,5 +4,6 @@
 <xsl:import href="touppercase.xsl"/>
 <xsl:import href="tolowercase.xsl"/>
 <xsl:import href="titleize.xsl"/>
+<xsl:import href="licenses.xsl"/>
 
 </xsl:stylesheet>
