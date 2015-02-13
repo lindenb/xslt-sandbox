@@ -45,6 +45,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.defaultnodesettings.SettingsModel;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortType;
 import org.knime.core.data.DataTableSpec;
@@ -81,6 +82,19 @@ public abstract class AbstractNodeModel
     
 	protected abstract DataTableSpec createOutDataTableSpec(int index);
 	
+	
+	/** returns all the settings */
+	protected java.util.List&lt;SettingsModel&gt; getSettingsModel()
+		{
+		java.util.List&lt;SettingsModel&gt; L=new java.util.ArrayList&lt;SettingsModel&gt;();
+		fillSettingsModel(L);
+		return L;
+		}
+	
+	/** collect all the settings. default implementation doesn't change the list */
+    protected java.util.List&lt;SettingsModel&gt; fillSettingsModel(java.util.List&lt;SettingsModel&gt; list) {
+    	return list;
+    	}
 	
 	@Override
 	protected void loadInternals(File arg0, ExecutionMonitor arg1)
@@ -320,6 +334,7 @@ import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataColumnSpec;
 
 
+
 @javax.annotation.Generated("jvarkit")
 public abstract class Abstract<xsl:apply-templates select="." mode="name"/>NodeModel
 extends <xsl:choose>
@@ -367,14 +382,14 @@ extends <xsl:choose>
 	
 	</xsl:for-each>
 	
-	<xsl:apply-templates select="property" mode="getter"/>
-	
-    protected java.util.List&lt;SettingsModel&gt; getSettingsModel() {
-    	java.util.List&lt;SettingsModel&gt; L=new java.util.ArrayList&lt;SettingsModel&gt;( <xsl:value-of select="count(column)"/> );
+
+	@Override
+    protected java.util.List&lt;SettingsModel&gt; fillSettingsModel(java.util.List&lt;SettingsModel&gt; list) {
+    	list = super.fillSettingsModel(list);
     	<xsl:for-each select="property">
-    	L.add(this.<xsl:apply-templates select="." mode="variable.name"/>);
+    	list.add(this.<xsl:apply-templates select="." mode="getter"/>());
     	</xsl:for-each>
-    	return L;
+    	return list;
     	}
 	
 	}
@@ -465,7 +480,39 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 </xsl:template>
 
 <xsl:template match="property">
+
+	/** <xsl:apply-templates select="." mode="label"/> */
+
 <xsl:choose>
+
+<xsl:when test="@type='bool'">
+	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
+	final static boolean <xsl:apply-templates select="." mode="default.name"/> = <xsl:choose>
+			<xsl:when test="@default"><xsl:value-of select="@default"/></xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>;
+
+	private org.knime.core.node.defaultnodesettings.SettingsModelBoolean <xsl:apply-templates select="." mode="variable.name"/> = 
+		new  org.knime.core.node.defaultnodesettings.SettingsModelBoolean(
+			<xsl:apply-templates select="." mode="config.name"/>,
+			<xsl:apply-templates select="." mode="default.name"/>
+			);
+		
+	
+	protected org.knime.core.node.defaultnodesettings.SettingsModelBoolean <xsl:apply-templates select="." mode="getter"/>()
+		{
+		return this.<xsl:apply-templates select="." mode="variable.name"/>;
+		}
+	
+	protected boolean <xsl:apply-templates select="." mode="getter.value"/>()
+		{
+		return <xsl:apply-templates select="." mode="getter"/>().getBooleanValue();
+		}
+
+	
+</xsl:when>
+
+
 <xsl:when test="@type='int'">
 	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
 	final static int <xsl:apply-templates select="." mode="default.name"/> = <xsl:choose>
@@ -473,13 +520,109 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 			<xsl:otherwise>0</xsl:otherwise>
 		</xsl:choose>;
 
-	/** <xsl:apply-templates select="." mode="label"/> */
 	private org.knime.core.node.defaultnodesettings.SettingsModelInteger <xsl:apply-templates select="." mode="variable.name"/> = 
 		new  org.knime.core.node.defaultnodesettings.SettingsModelInteger(
 			<xsl:apply-templates select="." mode="config.name"/>,
 			<xsl:apply-templates select="." mode="default.name"/>
 			);
-		</xsl:when>
+
+	protected org.knime.core.node.defaultnodesettings.SettingsModelInteger <xsl:apply-templates select="." mode="getter"/>()
+		{
+		return this.<xsl:apply-templates select="." mode="variable.name"/>;
+		}
+	
+	protected int <xsl:apply-templates select="." mode="getter.value"/>()
+		{
+		return <xsl:apply-templates select="." mode="getter"/>().getIntValue();
+		}
+
+	
+</xsl:when>
+
+
+<xsl:when test="@type='long'">
+	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
+	final static long <xsl:apply-templates select="." mode="default.name"/> = <xsl:choose>
+			<xsl:when test="@default"><xsl:value-of select="@default"/></xsl:when>
+			<xsl:otherwise>0L</xsl:otherwise>
+		</xsl:choose>;
+
+	private org.knime.core.node.defaultnodesettings.SettingsModelLong <xsl:apply-templates select="." mode="variable.name"/> = 
+		new  org.knime.core.node.defaultnodesettings.SettingsModelLong(
+			<xsl:apply-templates select="." mode="config.name"/>,
+			<xsl:apply-templates select="." mode="default.name"/>
+			);
+	
+	protected org.knime.core.node.defaultnodesettings.SettingsModelLong <xsl:apply-templates select="." mode="getter"/>()
+		{
+		return this.<xsl:apply-templates select="." mode="variable.name"/>;
+		}
+	
+	protected long <xsl:apply-templates select="." mode="getter.value"/>()
+		{
+		return <xsl:apply-templates select="." mode="getter"/>().getLongValue();
+		}
+
+	
+</xsl:when>
+
+<xsl:when test="@type='double'">
+	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
+	final static double <xsl:apply-templates select="." mode="default.name"/> = <xsl:choose>
+			<xsl:when test="@default"><xsl:value-of select="@default"/></xsl:when>
+			<xsl:otherwise>0.0</xsl:otherwise>
+		</xsl:choose>;
+
+	
+	private org.knime.core.node.defaultnodesettings.SettingsModelDouble <xsl:apply-templates select="." mode="variable.name"/> = 
+		new  org.knime.core.node.defaultnodesettings.SettingsModelDouble(
+			<xsl:apply-templates select="." mode="config.name"/>,
+			<xsl:apply-templates select="." mode="default.name"/>
+			);
+
+	protected org.knime.core.node.defaultnodesettings.SettingsModelDouble <xsl:apply-templates select="." mode="getter"/>()
+		{
+		return this.<xsl:apply-templates select="." mode="variable.name"/>;
+		}
+	
+	protected double <xsl:apply-templates select="." mode="getter.value"/>()
+		{
+		return <xsl:apply-templates select="." mode="getter"/>().getDoubleValue();
+		}
+
+
+</xsl:when>
+
+
+<xsl:when test="@type='column'">
+	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
+	final static String <xsl:apply-templates select="." mode="default.name"/> = <xsl:choose>
+			<xsl:when test="@default">"<xsl:value-of select="@default"/>"</xsl:when>
+			<xsl:otherwise>"COLUMN"</xsl:otherwise>
+		</xsl:choose>;
+
+	
+	private org.knime.core.node.defaultnodesettings.SettingsModelColumnName <xsl:apply-templates select="." mode="variable.name"/> = 
+		new  org.knime.core.node.defaultnodesettings.SettingsModelColumnName(
+			<xsl:apply-templates select="." mode="config.name"/>,
+			<xsl:apply-templates select="." mode="default.name"/>
+			);
+
+	protected org.knime.core.node.defaultnodesettings.SettingsModelColumnName <xsl:apply-templates select="." mode="getter"/>()
+		{
+		return this.<xsl:apply-templates select="." mode="variable.name"/>;
+		}
+	
+	protected String <xsl:apply-templates select="." mode="getter.value"/>()
+		{
+		return <xsl:apply-templates select="." mode="getter"/>().getStringValue();
+		}
+
+
+</xsl:when>
+
+
+<!-- string -->
 <xsl:otherwise>
 	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
 	final static String <xsl:apply-templates select="." mode="default.name"/> = <xsl:choose>
@@ -487,12 +630,23 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 			<xsl:otherwise>""</xsl:otherwise>
 		</xsl:choose>;
 
-	/** <xsl:apply-templates select="." mode="label"/> */
-	private org.knime.core.node.defaultnodesettings.SettingsModelString <xsl:apply-templates select="." mode="variable.name"/> = 
+	protected org.knime.core.node.defaultnodesettings.SettingsModelString <xsl:apply-templates select="." mode="variable.name"/> = 
 		new  org.knime.core.node.defaultnodesettings.SettingsModelString(
 			<xsl:apply-templates select="." mode="config.name"/>,
 			<xsl:apply-templates select="." mode="default.name"/>
 			);
+
+
+	protected org.knime.core.node.defaultnodesettings.SettingsModelString <xsl:apply-templates select="." mode="getter"/>()
+		{
+		return this.<xsl:apply-templates select="." mode="variable.name"/>;
+		}
+	
+	protected String <xsl:apply-templates select="." mode="getter.value"/>()
+		{
+		return <xsl:apply-templates select="." mode="getter"/>().getStringValue();
+		}
+	
 
 </xsl:otherwise>
 </xsl:choose>
@@ -501,6 +655,17 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 
 <xsl:template match="property" mode="dialog">
 <xsl:choose>
+
+<xsl:when test="@type='bool'">
+		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentBoolean(
+					new org.knime.core.node.defaultnodesettings.SettingsModelBoolean(
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="config.name"/>,
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="default.name"/>
+						),
+					"<xsl:apply-templates select="." mode="label"/>"
+					));
+</xsl:when>
+
 <xsl:when test="@type='int'">
 		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentNumber(
 					new org.knime.core.node.defaultnodesettings.SettingsModelInteger(
@@ -510,6 +675,53 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 					"<xsl:apply-templates select="." mode="label"/>",1,10
 					));
 </xsl:when>
+
+<xsl:when test="@type='long'">
+		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentNumber(
+					new org.knime.core.node.defaultnodesettings.SettingsModelLong(
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="config.name"/>,
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="default.name"/>
+						),
+					"<xsl:apply-templates select="." mode="label"/>",1,10
+					));
+</xsl:when>
+
+<xsl:when test="@type='double'">
+		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentNumber(
+					new org.knime.core.node.defaultnodesettings.SettingsModelDouble(
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="config.name"/>,
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="default.name"/>
+						),
+					"<xsl:apply-templates select="." mode="label"/>",1,10
+					));
+</xsl:when>
+
+<xsl:when test="@type='column'">
+<xsl:variable name="port" select="@port"/>
+		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentColumnNameSelection(
+					new org.knime.core.node.defaultnodesettings.SettingsModelColumnName(
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="config.name"/>,
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="default.name"/>
+						),
+					"<xsl:apply-templates select="." mode="label"/>",
+					<xsl:for-each select="../inPort">
+						<xsl:if test="@name = $port"><xsl:value-of select="position() - 1"/> /* inSpsec '<xsl:value-of select="@name"/>' */</xsl:if>
+					</xsl:for-each>,
+					new  org.knime.core.node.util.ColumnFilter() {
+						@Override
+						public boolean includeColumn(org.knime.core.data.DataColumnSpec dcs) {
+							return true;
+						}
+						
+						@Override
+						public String allFilteredMsg() {
+							return "Cannot find any valid column for <xsl:apply-templates select="." mode="label"/>";
+						}
+					}
+					));
+</xsl:when>
+
+
 <xsl:otherwise>
 		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentMultiLineString(
 					new org.knime.core.node.defaultnodesettings.SettingsModelString(
@@ -521,6 +733,23 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 
 </xsl:otherwise>
 </xsl:choose>
+</xsl:template>
+
+
+<xsl:template match="property" mode="getter">
+<xsl:text>getProperty</xsl:text>
+<xsl:call-template name="titleize">
+ <xsl:with-param name="s" select="@name"/>
+</xsl:call-template>
+<xsl:text>Settings</xsl:text>
+</xsl:template>
+
+<xsl:template match="property" mode="getter.value">
+<xsl:text>getProperty</xsl:text>
+<xsl:call-template name="titleize">
+ <xsl:with-param name="s" select="@name"/>
+</xsl:call-template>
+<xsl:text>Value</xsl:text>
 </xsl:template>
 
 
