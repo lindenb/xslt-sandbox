@@ -52,7 +52,7 @@ import org.knime.core.data.DataTableSpec;
 
 
 
-@javax.annotation.Generated("jvarkit")
+@javax.annotation.Generated("xslt-sandbox/knime2java")
 public abstract class AbstractNodeModel
 	extends org.knime.core.node.NodeModel
 	{
@@ -136,7 +136,7 @@ public abstract class AbstractNodeModel
 
 </xsl:document>
 
-<xsl:document href="{$base.dir}/plugin.xml" method="xml">
+<xsl:document href="{$base.dir}/plugin.xml" method="xml" indent="yes">
 <xsl:processing-instruction name="eclipse"> version="3.0" </xsl:processing-instruction >
 <plugin>
   <extension point="org.knime.workbench.repository.categories">
@@ -152,8 +152,8 @@ public abstract class AbstractNodeModel
 
 <xsl:template match="node" mode="plugin.xml">
 <node  category-path="/community/knime4bio/linux">
-    <xsl:attribute name="factory-class"></xsl:attribute>
-    <xsl:attribute name="id"></xsl:attribute>   
+    <xsl:attribute name="factory-class"><xsl:apply-templates select="." mode="package"/><xsl:text>.</xsl:text><xsl:apply-templates select="." mode="name"/>NodeFactory</xsl:attribute>
+    <xsl:attribute name="id"><xsl:apply-templates select="." mode="package"/><xsl:text>.</xsl:text><xsl:apply-templates select="." mode="name"/>NodeFactory</xsl:attribute>   
 </node>
 </xsl:template>
 
@@ -270,7 +270,7 @@ import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
 import org.knime.core.data.DataTableSpec;
 
-@javax.annotation.Generated("jvarkit")
+@javax.annotation.Generated("xslt-sandbox/knime2java")
 public class <xsl:apply-templates select="." mode="name"/>NodeFactory
         extends NodeFactory&lt;<xsl:apply-templates select="." mode="name"/>NodeModel&gt; {
 	
@@ -312,7 +312,7 @@ package <xsl:apply-templates select="." mode="package"/>;
 
 import org.knime.core.node.defaultnodesettings.DefaultNodeSettingsPane;
 
-@javax.annotation.Generated("jvarkit")
+@javax.annotation.Generated("xslt-sandbox/knime2java")
 public class <xsl:apply-templates select="." mode="name"/>NodeDialog
 	extends DefaultNodeSettingsPane
 	{
@@ -335,7 +335,7 @@ import org.knime.core.data.DataColumnSpec;
 
 
 
-@javax.annotation.Generated("jvarkit")
+@javax.annotation.Generated("xslt-sandbox/knime2java")
 public abstract class Abstract<xsl:apply-templates select="." mode="name"/>NodeModel
 extends <xsl:choose>
 	<xsl:when test="string-length(@extends)&gt;0">
@@ -354,6 +354,14 @@ extends <xsl:choose>
 		/* super(inport,outport) */
 		super( <xsl:value-of select="count(inPort)"/>, <xsl:value-of select="count(outPort)"/> );
 		}
+	
+	
+	 @Override
+    protected abstract org.knime.core.node.BufferedDataTable[] execute(
+    		final org.knime.core.node.BufferedDataTable[] inData,
+            final org.knime.core.node.ExecutionContext exec
+            ) throws Exception;
+			
 	
 	@Override
     protected DataTableSpec createOutDataTableSpec(int index)
@@ -403,15 +411,83 @@ extends <xsl:choose>
 <xsl:value-of select="$apache2.license"/>
 */
 package <xsl:apply-templates select="." mode="package"/>;
+import org.knime.core.node.*;
+import org.knime.core.data.*;
+<xsl:apply-templates select="code/import"/>
 
-
-@javax.annotation.Generated("jvarkit")
+@javax.annotation.Generated("xslt-sandbox/knime2java")
 public class <xsl:apply-templates select="." mode="name"/>NodeModel
 	extends Abstract<xsl:apply-templates select="." mode="name"/>NodeModel
 	{
 	public <xsl:apply-templates select="." mode="name"/>NodeModel()
 		{
 		}
+		
+	<xsl:choose>
+	<xsl:when test="code/body">
+		<xsl:apply-templates select="code/body"/>
+	</xsl:when>
+	<xsl:otherwise>
+	@Override
+    protected BufferedDataTable[] execute(
+    		final BufferedDataTable[] inData,
+            final ExecutionContext exec
+            ) throws Exception
+			{
+			BufferedDataContainer containers[]=  new BufferedDataContainer[getNrOutPorts()];;
+			try
+		    	{
+				BufferedDataTable table1=inData[0];
+		       	 <xsl:for-each select="outPort">
+		        containers[<xsl:value-of select="position() -1"/>] = null; /* TODO */
+		        </xsl:for-each>
+		        double total=table1.getRowCount();
+		        long nRow = 0L;
+		        RowIterator iter1=null;
+		       
+		        try {
+		        	iter1=table1.iterator();
+		     
+		        	while(iter1.hasNext())
+		        		{
+		        		++nRow;
+		        		DataRow row=iter1.next();
+		        		
+		        		exec.checkCanceled();
+		            	exec.setProgress(nRow/total,"Extracting <xsl:value-of select="@name"/>....");
+		        		}
+					} 
+		        catch (Exception e)
+					{
+		        	e.printStackTrace();
+					throw e;
+					}
+				finally
+					{
+					
+					}
+		        
+		        /* create and fill array to be returned */
+		        BufferedDataTable returnBufferedDataTable[]= new BufferedDataTable[getNrOutPorts()];
+		        <xsl:for-each select="outPort">
+		        containers[<xsl:value-of select="position() -1"/>].close();
+		       	returnBufferedDataTable[ <xsl:value-of select="position() -1"/> ] = containers[<xsl:value-of select="position() -1"/>].getTable() ;
+		        </xsl:for-each>
+		    	return returnBufferedDataTable;
+		    	}
+		catch(Exception err)
+			{
+			getLogger().error("Boum", err);
+			err.printStackTrace();
+			throw err;
+			}
+		finally
+			{
+			
+			}
+		}
+	</xsl:otherwise>
+	</xsl:choose>
 	}
 </xsl:document>
 
@@ -625,10 +701,31 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 <!-- string -->
 <xsl:otherwise>
 	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
+	
+	<xsl:choose>
+	<xsl:when test="enum">
+	final static String <xsl:apply-templates select="." mode="enum.name"/>[] = new String[]{
+		<xsl:for-each select="enum"><xsl:if test="position()&gt;1">,</xsl:if>
+		"<xsl:value-of select="text()"/>"</xsl:for-each>
+		};
+	
+	final static String <xsl:apply-templates select="." mode="default.name"/> = <xsl:apply-templates select="." mode="enum.name"/>[<xsl:choose>
+			<xsl:when test="@default">
+				<xsl:for-each select="enum"><xsl:if test="text() =../@default"><xsl:value-of select="position() - 1"/></xsl:if></xsl:for-each>
+			</xsl:when>
+			<xsl:otherwise>0</xsl:otherwise>
+		</xsl:choose>];
+	
+	
+	</xsl:when>
+	<xsl:otherwise>
 	final static String <xsl:apply-templates select="." mode="default.name"/> = <xsl:choose>
 			<xsl:when test="@default">"<xsl:value-of select="@default"/>"</xsl:when>
 			<xsl:otherwise>""</xsl:otherwise>
 		</xsl:choose>;
+	</xsl:otherwise>
+	</xsl:choose>
+
 
 	protected org.knime.core.node.defaultnodesettings.SettingsModelString <xsl:apply-templates select="." mode="variable.name"/> = 
 		new  org.knime.core.node.defaultnodesettings.SettingsModelString(
@@ -763,6 +860,13 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
  <xsl:with-param name="s" select="@name"/>
 </xsl:call-template>
 </xsl:template>
+
+
+<xsl:template match="property" mode="enum.name">
+<xsl:apply-templates select="." mode="config.name"/>
+<xsl:text>_ENUM</xsl:text>
+</xsl:template>
+
 
 <xsl:template match="property" mode="default.name">
 <xsl:text>DEFAULT_</xsl:text>
