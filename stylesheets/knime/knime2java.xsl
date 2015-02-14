@@ -1,7 +1,8 @@
 <?xml version='1.0'  encoding="UTF-8" ?>
 <xsl:stylesheet
         xmlns:xsl='http://www.w3.org/1999/XSL/Transform'
-	version='1.0'
+        xmlns:date="http://exslt.org/dates-and-times" 
+		version='1.0'
         >
 <xsl:import href="../util/util.xsl"/>
 <xsl:output method="text"/>
@@ -29,17 +30,19 @@ Usage :
 
 <xsl:variable name="outdir"><xsl:value-of select="concat($base.dir,'/')"/><xsl:apply-templates select="." mode="out.dir"/></xsl:variable>
 
-<xsl:apply-templates select="node"/>
+<xsl:apply-templates select="category"/>
 
 
-<xsl:document href="{$outdir}/AbstractNodeModel.java" method="text">
-/**
+<xsl:document href="{$outdir}/AbstractNodeModel.java" method="text">/**
 <xsl:value-of select="$apache2.license"/>
 **/
 package <xsl:apply-templates select="." mode="package"/>;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.StringWriter;
 
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
@@ -48,15 +51,23 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.defaultnodesettings.SettingsModel;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortType;
+import org.knime.core.util.FileUtil;
 import org.knime.core.data.DataTableSpec;
 
-
+/**
+ * date: <xsl:value-of select="date:date-time()"/>
+ */
 
 @javax.annotation.Generated("xslt-sandbox/knime2java")
 public abstract class AbstractNodeModel
 	extends org.knime.core.node.NodeModel
 	{
-	<xsl:apply-templates select="property"/>
+	private final static String UNIQ_ID_FILE="nodeid.txt";
+	/** uniq ID for this node */
+	private String nodeUniqId=null;
+
+
+
 	
 	protected AbstractNodeModel(int inport,int outport)
 		{
@@ -69,6 +80,10 @@ public abstract class AbstractNodeModel
 		super(inPortTypes, outPortTypes);
 		}
 
+	public final String getCompilationDate()
+		{
+		return "<xsl:value-of select="date:date-time()"/>";
+		}
 	
 	protected DataTableSpec[] createOutTableSpec()
     	{
@@ -97,15 +112,34 @@ public abstract class AbstractNodeModel
     	}
 	
 	@Override
-	protected void loadInternals(File arg0, ExecutionMonitor arg1)
+	protected void loadInternals(File dir, ExecutionMonitor executionMonitor)
 			throws IOException, CanceledExecutionException
 		{
+		getLogger().info("loadInternals "+getClass().getName()+" from "+dir);
+		File f=new File(dir,UNIQ_ID_FILE);
+		if(f.exists() &amp;&amp; f.isFile())
+			{
+			FileReader r=new FileReader(f);
+			StringWriter sw=new StringWriter();
+			FileUtil.copy(r, sw);
+			r.close();
+			String id=sw.toString();
+			if(this.nodeUniqId!=null &amp;&amp; !id.equals(this.nodeUniqId))
+				{
+				throw new IOException("No the same node  id?? "+id+ " "+this.nodeUniqId);
+				}
+			this.nodeUniqId=id;
+			}
+
 		}
 	
 	@Override
-	protected void loadValidatedSettingsFrom(NodeSettingsRO arg0)
+	protected void loadValidatedSettingsFrom(NodeSettingsRO settings)
 			throws InvalidSettingsException
 		{
+		getLogger().info("loadValidatedSettingsFrom "+getClass().getName());
+		for(SettingsModel param:getSettingsModel())
+    		param.loadSettingsFrom(settings);
 		}
 	
 	@Override
@@ -117,7 +151,12 @@ public abstract class AbstractNodeModel
 	protected void saveInternals(File dir, ExecutionMonitor executionMonitor)
 			throws IOException, CanceledExecutionException
 		{
-		getLogger().info("saveInternals "+getClass().getName());
+		getLogger().info("saveInternals "+getClass().getName()+" to "+dir);
+		/* save node uniq id */
+		FileWriter w=new FileWriter(new File(dir,UNIQ_ID_FILE));
+		w.write(getNodeUniqId());;
+		w.flush();
+		w.close();
 		}
 	
 	/* Adds to the given NodeSettings the model specific settings. The settings don't need to be complete or consistent.
@@ -126,12 +165,53 @@ public abstract class AbstractNodeModel
 	@Override
 	protected void saveSettingsTo(NodeSettingsWO settings) {
 		getLogger().info("saveSettingsTo "+getClass().getName());
+		for(SettingsModel sm:getSettingsModel())
+			sm.saveSettingsTo(settings);
 		}
 	@Override
 	protected void validateSettings(NodeSettingsRO settings)
 			throws InvalidSettingsException {
 		getLogger().info("validateSettings "+getClass().getName());
+		for(SettingsModel sm:getSettingsModel())
+				sm.validateSettings(settings);
 		}
+
+	/* get MD5 for a string */
+	protected static String md5(CharSequence sequence)
+		{
+		try {
+			java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+	        for(int i=0;i &lt; sequence.length();++i)
+	          md.update((byte)sequence.charAt(i));
+	        byte[] mdbytes = md.digest();
+	        StringBuffer hexString = new StringBuffer(50);
+	    	for (int i=0;i&lt;mdbytes.length;i++) {
+	    		String hex=Integer.toHexString(0xff &amp; mdbytes[i]);
+	   	     	if(hex.length()==1) hexString.append('0');
+	   	     	hexString.append(hex);
+	    		}
+	    	return hexString.toString();
+			}
+		catch(Exception err)
+			{
+			throw new RuntimeException(err);
+			}
+		}
+	/** get uniq node id for this node https://tech.knime.org/node/20789 */
+	protected synchronized String getNodeUniqId()
+		{
+		if(this.nodeUniqId==null)
+			{
+			this.nodeUniqId= md5(
+				String.valueOf(getClass().getName())+":"+
+				System.currentTimeMillis()+":"+
+				String.valueOf(System.getProperty("user.name"))+":"+
+				String.valueOf(Math.random())
+				);
+			}
+		return this.nodeUniqId;
+		}
+
 	}
 
 </xsl:document>
@@ -140,15 +220,16 @@ public abstract class AbstractNodeModel
 <xsl:processing-instruction name="eclipse"> version="3.0" </xsl:processing-instruction >
 <plugin>
   <extension point="org.knime.workbench.repository.categories">
-  	<category description="KNime4Bio"  level-id="knime4bio" name="KNime4Bio" path="/community"/>
+  	<xsl:apply-templates select="category" mode="plugin.xml"/> 
   </extension>
   <extension point="org.knime.workbench.repository.nodes">
-  	<xsl:apply-templates select="node" mode="plugin.xml"/> 
+  	<xsl:apply-templates select="category/node" mode="plugin.xml"/> 
   </extension>
 </plugin>
 </xsl:document>
 
 </xsl:template>
+
 
 <xsl:template match="node" mode="plugin.xml">
 <node  category-path="/community/knime4bio/linux">
@@ -172,6 +253,8 @@ public abstract class AbstractNodeModel
     <fullDescription>
         <intro>
        		<xsl:apply-templates select="." mode="todo"/>
+       		
+       		Date: <xsl:value-of select="date:date-time()"/>
 		</intro>
         <xsl:for-each select="property">
         	<option>
@@ -509,6 +592,58 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 </xsl:template>
 
 
+
+<xsl:template match="category" mode="plugin.xml">
+  	<category>
+  		<xsl:attribute name="level-id"><xsl:value-of select="@name"/></xsl:attribute>
+  		<xsl:attribute name="name"><xsl:apply-templates select="." mode="label"/></xsl:attribute>
+  		<xsl:attribute name="path"><xsl:apply-templates select="." mode="path"/></xsl:attribute>
+  		<xsl:attribute name="description"><xsl:value-of select="@name"/></xsl:attribute>
+  	</category>
+</xsl:template>
+
+<xsl:template match="category" mode="label">
+<xsl:choose>
+	<xsl:when test="@label"><xsl:value-of select="@label"/></xsl:when>
+	<xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+
+<xsl:template match="category" mode="path">
+<xsl:text>/community/</xsl:text>
+<xsl:choose>
+	<xsl:when test="@path"><xsl:value-of select="@path"/></xsl:when>
+	<xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+
+<xsl:template match="category" mode="description">
+<xsl:choose>
+	<xsl:when test="description"><xsl:value-of select="description"/></xsl:when>
+	<xsl:otherwise><xsl:apply-templates select="." mode="label"/></xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+
+<xsl:template match="category" mode="package">
+<xsl:choose>
+	<xsl:when test="@package"><xsl:value-of select="@package"/></xsl:when>
+	<xsl:otherwise>
+		<xsl:apply-templates select=".." mode="package"/>
+		<xsl:text>.</xsl:text>
+		<xsl:call-template name="tolowercase">
+			<xsl:with-param name="s"><xsl:value-of select="@name"/></xsl:with-param>
+		</xsl:call-template>
+	</xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+
+
+<xsl:template match="category">
+<xsl:apply-templates select="node"/>
+</xsl:template>
+
+
+
 <xsl:template match="node" mode="package">
 <xsl:choose>
 	<xsl:when test="@package"><xsl:value-of select="@package"/></xsl:when>
@@ -697,6 +832,33 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 
 </xsl:when>
 
+<xsl:when test="@type='file-read' or @type='file-save'">
+	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
+	final static String <xsl:apply-templates select="." mode="default.name"/> = <xsl:choose>
+			<xsl:when test="@default">"<xsl:value-of select="@default"/>"</xsl:when>
+			<xsl:otherwise>""</xsl:otherwise>
+		</xsl:choose>;
+
+	protected org.knime.core.node.defaultnodesettings.SettingsModelString <xsl:apply-templates select="." mode="variable.name"/> = 
+		new  org.knime.core.node.defaultnodesettings.SettingsModelString(
+			<xsl:apply-templates select="." mode="config.name"/>,
+			<xsl:apply-templates select="." mode="default.name"/>
+			);
+
+
+	protected org.knime.core.node.defaultnodesettings.SettingsModelString <xsl:apply-templates select="." mode="getter"/>()
+		{
+		return this.<xsl:apply-templates select="." mode="variable.name"/>;
+		}
+	
+	protected String <xsl:apply-templates select="." mode="getter.value"/>()
+		{
+		return <xsl:apply-templates select="." mode="getter"/>().getStringValue();
+		}
+
+</xsl:when>
+
+
 
 <!-- string -->
 <xsl:otherwise>
@@ -815,6 +977,31 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 							return "Cannot find any valid column for <xsl:apply-templates select="." mode="label"/>";
 						}
 					}
+					));
+</xsl:when>
+
+<xsl:when test="@type='file-read'">
+<xsl:variable name="port" select="@port"/>
+		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentFileChooser(
+					new org.knime.core.node.defaultnodesettings.SettingsModelString(
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="config.name"/>,
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="default.name"/>
+						),
+					"<xsl:value-of select="generate-id(.)"/>",/* historyID */
+					javax.swing.JFileChooser.OPEN_DIALOG
+					<xsl:for-each select="extension">,"<xsl:value-of select="."/></xsl:for-each>
+					));
+</xsl:when>
+
+<xsl:when test="@type='file-save'">
+<xsl:variable name="port" select="@port"/>
+		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentFileChooser(
+					new org.knime.core.node.defaultnodesettings.SettingsModelString(
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="config.name"/>,
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="default.name"/>
+						),
+					"<xsl:value-of select="generate-id(.)"/>",/* historyID */
+					javax.swing.JFileChooser.SAVE_DIALOG
 					));
 </xsl:when>
 
