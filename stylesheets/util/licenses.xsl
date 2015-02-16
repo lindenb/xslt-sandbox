@@ -1,7 +1,7 @@
 <?xml version='1.0' ?>
 <xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>
 
-<xsl:variable name="apache2.license">
+<xsl:variable name="mit.license">
 
 The MIT License (MIT)
 
