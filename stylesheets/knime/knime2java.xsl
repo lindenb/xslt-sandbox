@@ -8,7 +8,7 @@
 <xsl:import href="../util/util.xsl"/>
 <xsl:output method="text"/>
 <xsl:param name="base.dir">TMP</xsl:param>
-
+<xsl:variable name="default-icon16">iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAadEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjExR/NCNwAAAMFJREFUOE+lU1ERgzAUqwMkIAEJSEDKJCABCUiYBCTsa9+VMAldHiR3pbxBt+UuXJvkvQ8CIaX0F0+RnuFm5PU7YLABX2RDuR4YmsBETpTrgIE2GxZb2tdAeCmGjQvtcyDYF4M5e8Y+A6GoMPjgWYyM+UDAalvDlKRZE1oy0toDhmrbLTDQUyt+rRBnBg4LBOhaMlPaAKGj4S7A3XsfHe01cKiNun0P91zPuNWKw1AY4uhoJQdboNp+YcTT/03rmMIbIBaXYlrHs80AAAAASUVORK5CYII=</xsl:variable>
 <!--
 Author:
         Pierre Lindenbaum @yokofakun
@@ -31,15 +31,15 @@ Author:
 
 <xsl:document href="{$base.dir}/MANIFEST.MF" method="text">Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: <xsl:apply-templates select="." mode="label"/>
-Bundle-SymbolicName: <xsl:apply-templates select="." mode="package"/>; singleton:=true
+Bundle-Name: <xsl:apply-templates select="." mode="label"/> Compiled on <xsl:value-of select="date:date-time()"/>
+Bundle-SymbolicName: <xsl:for-each select="category/node"><xsl:if test="position()=1"><xsl:apply-templates select="." mode="package"/></xsl:if></xsl:for-each>; singleton:=true
 Bundle-Version: <xsl:apply-templates select="." mode="version"/>
 Bundle-ClassPath: <xsl:value-of select="$jar.name"/>.jar
 Bundle-Activator: <xsl:for-each select="category/node"><xsl:if test="position()=1"><xsl:apply-templates select="." mode="package"/>.<xsl:apply-templates select="." mode="name"/>NodePlugin</xsl:if></xsl:for-each>
 Bundle-Vendor: Pierre Lindenbaum
 Require-Bundle: org.eclipse.core.runtime,org.knime.workbench.core,org.knime.workbench.repository,org.knime.base
 Bundle-ActivationPolicy: lazy
-Export-Package: <xsl:apply-templates select="." mode="package"/>
+Export-Package: <xsl:for-each select="category/node"><xsl:if test="position()=1"><xsl:apply-templates select="." mode="package"/></xsl:if></xsl:for-each>
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 
 </xsl:document>
@@ -90,7 +90,8 @@ dist/<xsl:apply-templates select="." mode="package"/>_${plugin.version}.jar : di
 dist/<xsl:value-of select="$jar.name"/>.jar : ${knime.jars}
 	mkdir -p $(dir $@) ${tmp.dir}
 	cp -r src/. ${tmp.dir}<xsl:for-each select="category/node">
-	echo "<xsl:choose><xsl:when test="icon-base64"><xsl:value-of select="normalize-space(icon-base64)"/></xsl:when><xsl:otherwise>iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAadEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjExR/NCNwAAAMFJREFUOE+lU1ERgzAUqwMkIAEJSEDKJCABCUiYBCTsa9+VMAldHiR3pbxBt+UuXJvkvQ8CIaX0F0+RnuFm5PU7YLABX2RDuR4YmsBETpTrgIE2GxZb2tdAeCmGjQvtcyDYF4M5e8Y+A6GoMPjgWYyM+UDAalvDlKRZE1oy0toDhmrbLTDQUyt+rRBnBg4LBOhaMlPaAKGj4S7A3XsfHe01cKiNun0P91zPuNWKw1AY4uhoJQdboNp+YcTT/03rmMIbIBaXYlrHs80AAAAASUVORK5CYII=</xsl:otherwise></xsl:choose>" | base64 -d &gt; ${tmp.dir}/<xsl:apply-templates select="." mode="out.dir"/>default.png</xsl:for-each>
+	echo "<xsl:choose><xsl:when test="icon-base64"><xsl:value-of select="normalize-space(icon-base64)"/></xsl:when><xsl:otherwise><xsl:value-of select="$default-icon16"/></xsl:otherwise></xsl:choose>" | base64 -d &gt; ${tmp.dir}/<xsl:apply-templates select="." mode="out.dir"/>default.png</xsl:for-each><xsl:for-each select="category">
+	echo "<xsl:choose><xsl:when test="icon-base64"><xsl:value-of select="normalize-space(icon-base64)"/></xsl:when><xsl:otherwise><xsl:value-of select="$default-icon16"/></xsl:otherwise></xsl:choose>" | base64 -d &gt; ${tmp.dir}/default.png</xsl:for-each>
 	${JAVAC} -d ${tmp.dir} -g -classpath "$(subst $(SPACE),:,$(filter %.jar,$^))" -sourcepath ${tmp.dir} <xsl:for-each select="category/node"> \
 		${tmp.dir}/<xsl:apply-templates select="." mode="out.dir"/><xsl:apply-templates select="." mode="name"/>*.java </xsl:for-each>
 	jar cf $@ -C ${tmp.dir} .
@@ -311,6 +312,7 @@ public abstract class AbstractNodeModel
 <xsl:document href="{$base.dir}/plugin.xml" method="xml" indent="yes">
 <xsl:processing-instruction name="eclipse"> version="3.0" </xsl:processing-instruction >
 <plugin>
+
   <extension point="org.knime.workbench.repository.categories">
   	<xsl:apply-templates select="category" mode="plugin.xml"/> 
   </extension>
@@ -327,6 +329,7 @@ public abstract class AbstractNodeModel
 <node>
 	<xsl:attribute name="category-path">
 		<xsl:apply-templates select=".." mode="path"/>
+		<xsl:text>/</xsl:text>
 		<xsl:apply-templates select=".." mode="label"/>
 	</xsl:attribute>
     <xsl:attribute name="factory-class"><xsl:apply-templates select="." mode="package"/><xsl:text>.</xsl:text><xsl:apply-templates select="." mode="name"/>NodeFactory</xsl:attribute>
@@ -400,6 +403,7 @@ public class  <xsl:apply-templates select="." mode="name"/>NodePlugin extends Pl
     public  <xsl:apply-templates select="." mode="name"/>NodePlugin() {
         super();
         plugin = this;
+        System.err.println("[LOG]"+getClass()+" constructor");
     }
 
     /**
@@ -432,6 +436,7 @@ public class  <xsl:apply-templates select="." mode="name"/>NodePlugin extends Pl
      * @return Singleton instance of the Plugin
      */
     public static  <xsl:apply-templates select="." mode="name"/>NodePlugin getDefault() {
+    	System.err.println("[LOG] <xsl:apply-templates select="." mode="name"/>NodePlugin.getDefault invoked");
         return plugin;
     }
 
@@ -453,6 +458,14 @@ import org.knime.core.data.DataTableSpec;
 @javax.annotation.Generated("xslt-sandbox/knime2java")
 public class <xsl:apply-templates select="." mode="name"/>NodeFactory
         extends NodeFactory&lt;<xsl:apply-templates select="." mode="name"/>NodeModel&gt; {
+	
+	/** constructor */
+	public <xsl:apply-templates select="." mode="name"/>NodeFactory()
+		{
+		System.err.println("[LOG]"+getClass()+" constructor");
+		}
+	
+	
 	
     @Override
     public <xsl:apply-templates select="." mode="name"/>NodeModel createNodeModel() {
@@ -734,6 +747,7 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
   		<xsl:attribute name="name"><xsl:apply-templates select="." mode="label"/></xsl:attribute>
   		<xsl:attribute name="path"><xsl:apply-templates select="." mode="path"/></xsl:attribute>
   		<xsl:attribute name="description"><xsl:apply-templates select="." mode="description"/></xsl:attribute>
+  		<xsl:attribute name="icon">default.png</xsl:attribute>
   	</category>
 </xsl:template>
 
@@ -755,7 +769,7 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 <xsl:template match="category" mode="path">
 <xsl:choose>
 	<xsl:when test="@path"><xsl:value-of select="@path"/></xsl:when>
-	<xsl:otherwise>/community/</xsl:otherwise>
+	<xsl:otherwise>/xxxxx</xsl:otherwise>
 </xsl:choose>
 </xsl:template>
 
