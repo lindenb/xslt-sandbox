@@ -24,28 +24,28 @@ Author:
 <xsl:template match="plugin">
 
 <xsl:variable name="outdir"><xsl:value-of select="concat($base.dir,'/')"/>src/<xsl:apply-templates select="." mode="out.dir"/></xsl:variable>
+<xsl:variable name="_package"><xsl:apply-templates select="." mode="package"/></xsl:variable>
+<xsl:variable name="jar.name"><xsl:value-of select="translate(normalize-space($_package),'.','_')"/></xsl:variable>
 
 <xsl:apply-templates select="category"/>
 
 <xsl:document href="{$base.dir}/MANIFEST.MF" method="text">Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: <xsl:apply-templates select="." mode="label"/>
-Bundle-SymbolicName: <xsl:apply-templates select="." mode="package"/>;singleton:=true
+Bundle-SymbolicName: <xsl:apply-templates select="." mode="package"/>; singleton:=true
 Bundle-Version: <xsl:apply-templates select="." mode="version"/>
-Bundle-Activator: sf.eclipse.javacc.headless.Activator
+Bundle-ClassPath: <xsl:value-of select="$jar.name"/>.jar
+Bundle-Activator: <xsl:for-each select="category/node"><xsl:if test="position()=1"><xsl:apply-templates select="." mode="package"/>.<xsl:apply-templates select="." mode="name"/>NodePlugin</xsl:if></xsl:for-each>
 Bundle-Vendor: Pierre Lindenbaum
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Require-Bundle: org.eclipse.core.runtime,org.knime.workbench.core,org.knime.workbench.repository,org.knime.base
 Bundle-ActivationPolicy: lazy
 Export-Package: <xsl:apply-templates select="." mode="package"/>
-Bundle-ClassPath: <xsl:apply-templates select="." mode="name"/>.jar
-Require-Bundle: org.eclipse.core.runtime,
- org.knime.workbench.core,
- org.knime.workbench.repository,
- org.knime.base
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+
 </xsl:document>
 
 <xsl:document href="{$base.dir}/Makefile" method="text"># I hate ant
-.PHONY=all clean
+.PHONY=all clean install
 SHELL=/bin/bash
 tmp.dir=tmp
 plugin.version=<xsl:apply-templates select="." mode="version"/>
@@ -57,33 +57,42 @@ plugin.dir=${tmp.dir}/plugins/<xsl:apply-templates select="." mode="package"/>_$
 manifest=${plugin.dir}/META-INF/MANIFEST.MF
 fold.manifest= fold -w 70 | awk -F '	' '{printf("%s%s",(NR==1?"":" "),$$0}'
 
-knime.plugins.dir=${HOME}/tmp/KNIME/knime_2.11.2/plugins
-knime.jars=${knime.plugins.dir}/org.knime.core_2.11.2.0046103/knime-core.jar \
-		${knime.plugins.dir}/org.knime.base_2.11.2.0046096/knime-base.jar \
-		${knime.plugins.dir}/org.knime.core.util_5.0.0.0045367.jar \
-		${knime.plugins.dir}/org.eclipse.osgi_3.7.2.v20120110-1415.jar \
-		${knime.plugins.dir}/org.apache.xmlbeans_2.5.0.0042431/lib/xbean.jar \
-		${knime.plugins.dir}/org.eclipse.core.runtime_3.7.0.v20110110.jar
+
+knime.root?=knime
+knime.jars=$(shell find ${knime.root}/plugins -type f -name "knime-core.jar" -o -name "org.knime.core.util_*.jar" -o -name "org.eclipse.osgi_*.jar" -o -name "xbean*.jar" -o -name "org.eclipse.core.runtime_*.jar")
+
+ifeq (${HOSTNAME},kaamelot-master01)
+
+else
+
+endif
+
+
 
 JAVAC?=javac
 
-all: dist/<xsl:apply-templates select="." mode="package"/>_${plugin.version}.zip 
+all: dist/<xsl:apply-templates select="." mode="package"/>_${plugin.version}.jar 
 
-dist/<xsl:apply-templates select="." mode="package"/>_${plugin.version}.zip : dist/<xsl:apply-templates select="." mode="name"/>.jar
-	rm -f $@
-	mkdir -p ${feature.dir} ${plugin.dir} $(dir ${manifest})
-	cp feature.xml ${feature.dir}
-	cp plugin.xml ${plugin.dir}
-	cp dist/<xsl:apply-templates select="." mode="name"/>.jar  ${plugin.dir}
-	cat MANIFEST.MF | awk '{S=$$0;i=0;while(length(S)&gt;70) {printf("%s%s\n",(i==0?"":" "),substr(S,1,70));S=substr(S,71);i++;} printf("%s%s\n",(i==0?"":" "),S);}' &gt; ${manifest}
-	(cd ${tmp.dir} &amp;&amp; zip -r ../$@ . )
-	##rm -rf ${tmp.dir}
+install: dist/<xsl:apply-templates select="." mode="package"/>_${plugin.version}.jar 
+	rm -f ${knime.root}/plugins/<xsl:apply-templates select="." mode="package"/>_*.jar
+	cp $&lt; ${knime.root}/plugins/
+
+dist/<xsl:apply-templates select="." mode="package"/>_${plugin.version}.jar : dist/<xsl:value-of select="$jar.name"/>.jar
+	rm -f $@ 
+	mkdir -p ${tmp.dir}/META-INF $(dir $@)
+	cat MANIFEST.MF | awk '{S=$$0;i=0;while(length(S)&gt;70) {printf("%s%s\n",(i==0?"":" "),substr(S,1,70));S=substr(S,71);i++;} printf("%s%s\n",(i==0?"":" "),S);}' | tee /dev/tty &gt; ${tmp.dir}/META-INF/MANIFEST.MF
+	cp plugin.xml ${tmp.dir}
+	cp $&lt; ${tmp.dir}
+	jar cmvf ${tmp.dir}/META-INF/MANIFEST.MF $@  -C ${tmp.dir} .
+	rm -rf ${tmp.dir}
 	
 
-dist/<xsl:apply-templates select="." mode="name"/>.jar : ${knime.jars}
+dist/<xsl:value-of select="$jar.name"/>.jar : ${knime.jars}
 	mkdir -p $(dir $@) ${tmp.dir}
 	cp -r src/. ${tmp.dir}<xsl:for-each select="category/node">
-	${JAVAC} -d ${tmp.dir} -g -classpath "$(subst $(SPACE),:,$(filter %.jar,$^))" -sourcepath ${tmp.dir} ${tmp.dir}/<xsl:apply-templates select="." mode="out.dir"/>/<xsl:apply-templates select="." mode="name"/>NodePlugin.java ${tmp.dir}/<xsl:apply-templates select="." mode="out.dir"/>/<xsl:apply-templates select="." mode="name"/>NodeFactory.java</xsl:for-each>
+	echo "<xsl:choose><xsl:when test="icon-base64"><xsl:value-of select="normalize-space(icon-base64)"/></xsl:when><xsl:otherwise>iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAadEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjExR/NCNwAAAMFJREFUOE+lU1ERgzAUqwMkIAEJSEDKJCABCUiYBCTsa9+VMAldHiR3pbxBt+UuXJvkvQ8CIaX0F0+RnuFm5PU7YLABX2RDuR4YmsBETpTrgIE2GxZb2tdAeCmGjQvtcyDYF4M5e8Y+A6GoMPjgWYyM+UDAalvDlKRZE1oy0toDhmrbLTDQUyt+rRBnBg4LBOhaMlPaAKGj4S7A3XsfHe01cKiNun0P91zPuNWKw1AY4uhoJQdboNp+YcTT/03rmMIbIBaXYlrHs80AAAAASUVORK5CYII=</xsl:otherwise></xsl:choose>" | base64 -d &gt; ${tmp.dir}/<xsl:apply-templates select="." mode="out.dir"/>default.png</xsl:for-each>
+	${JAVAC} -d ${tmp.dir} -g -classpath "$(subst $(SPACE),:,$(filter %.jar,$^))" -sourcepath ${tmp.dir} <xsl:for-each select="category/node"> \
+		${tmp.dir}/<xsl:apply-templates select="." mode="out.dir"/><xsl:apply-templates select="." mode="name"/>*.java </xsl:for-each>
 	jar cf $@ -C ${tmp.dir} .
 	rm -rf ${tmp.dir}
 	
@@ -333,13 +342,14 @@ public abstract class AbstractNodeModel
 <xsl:message terminate="no">node name <xsl:value-of select="$node.name"/></xsl:message>
 <xsl:message terminate="no">outdir <xsl:value-of select="$outdir"/></xsl:message>
 
-<xsl:document href="{$outdir}{$node.name}NodeFactory.xml" method="xml">
+<xsl:document href="{$outdir}{$node.name}NodeFactory.xml" method="xml" indent="yes">
 <knimeNode icon="default.png" type="Source">
+	<xsl:comment>Generated with knime2java</xsl:comment>
     <name><xsl:apply-templates select="." mode="label"/></name>
     <shortDescription><xsl:apply-templates select="."  mode="short.desc"/></shortDescription>    
     <fullDescription>
         <intro>
-       		<xsl:apply-templates select="." mode="todo"/>
+       		<xsl:apply-templates select="." mode="description"/>
        		
        		Date: <xsl:value-of select="date:date-time()"/>
 		</intro>
@@ -800,6 +810,38 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 </xsl:call-template>
 </xsl:template>
 
+<xsl:template match="node" mode="label">
+<xsl:choose>
+	<xsl:when test="@label"><xsl:value-of select="@label"/></xsl:when>
+	<xsl:when test="label"><xsl:value-of select="label"/></xsl:when>
+	<xsl:otherwise>
+		<xsl:apply-templates select="." mode="name"/>
+	</xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+
+
+<xsl:template match="node" mode="short.desc">
+<xsl:choose>
+	<xsl:when test="@short-desc"><xsl:value-of select="@short-desc"/></xsl:when>
+	<xsl:when test="short-desc"><xsl:value-of select="short-desc"/></xsl:when>
+	<xsl:otherwise>
+		<xsl:apply-templates select="." mode="label"/>
+	</xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+
+
+<xsl:template match="node" mode="description">
+<xsl:choose>
+	<xsl:when test="@description"><xsl:value-of select="@description"/></xsl:when>
+	<xsl:when test="description"><xsl:value-of select="description"/></xsl:when>
+	<xsl:otherwise>
+		<xsl:apply-templates select="." mode="short.desc"/>
+	</xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+
 
 <xsl:template match="node" mode="out.dir">
 <xsl:variable name="package"><xsl:apply-templates select="." mode="package"/></xsl:variable>
@@ -1193,5 +1235,18 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
  <xsl:with-param name="s" select="@name"/>
 </xsl:call-template>
 </xsl:template>
+
+
+<xsl:template match="inPort|outPort" mode="label">
+<xsl:choose>
+	<xsl:when test="@label"><xsl:value-of select="@label"/></xsl:when>
+	<xsl:when test="label"><xsl:value-of select="label"/></xsl:when>
+	<xsl:otherwise>
+		<xsl:value-of select="@name"/>
+	</xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+
+
 
 </xsl:stylesheet>
