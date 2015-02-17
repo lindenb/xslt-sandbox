@@ -336,6 +336,17 @@ public abstract class AbstractNodeModel
 			));
 		}
 	
+	/* generic way to open a file for writing, gzip if extension=.gz */
+	protected java.io.OutputStream openFileForWriting(java.io.File fout)  throws java.io.IOException
+		{
+		java.io.OutputStream out= new java.io.FileOutputStream(fout);
+		if(fout.getName().endsWith(".gz"))
+			{
+			out= new java.util.zip.GZIPOutputStream(out);
+			}
+		return out;
+		}
+	
 	
 	/** throws an InvalidSettingsException if column was not found */
     public int findColumnIndex(DataTableSpec dataTableSpec,String name)
@@ -587,6 +598,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataType;
 import org.knime.core.data.def.StringCell;
+import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.IntCell;
 
 
@@ -710,8 +722,8 @@ extends <xsl:choose>
 	/** create DataTableSpec for outport '<xsl:value-of select="position() -1 "/>' <xsl:apply-templates select="." mode="label"/> for known DataTableSpec */
 	protected DataTableSpec configureOutTableSpec<xsl:value-of select="position() -1 "/>(DataTableSpec[] inSpecs) throws InvalidSettingsException
 		{
-		<xsl:for-each select="../property[@type=column">
-		/* this.findColumnIndex(inSpecs[0],m_column.getColumnName()); */
+		<xsl:for-each select="../property[@type=column]">
+		/* findColumnIndex(inSpecs[0],m_column.getColumnName()); */
 		</xsl:for-each>
 		
 		
@@ -742,6 +754,7 @@ extends <xsl:choose>
 package <xsl:apply-templates select="." mode="package"/>;
 import org.knime.core.node.*;
 import org.knime.core.data.*;
+import org.knime.core.data.def.*;
 
 /** BEGIN user imports */
 <xsl:apply-templates select="code/import"/>
@@ -1164,6 +1177,11 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 
 
 <xsl:when test="@type='column'">
+<xsl:variable name="titlename">
+<xsl:call-template name="titleize">
+	<xsl:with-param name="s" select="@name"/>
+</xsl:call-template>
+</xsl:variable>
 	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
 	final static String <xsl:apply-templates select="." mode="default.name"/> = <xsl:choose>
 			<xsl:when test="@default">"<xsl:value-of select="@default"/>"</xsl:when>
@@ -1187,10 +1205,33 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 		return <xsl:apply-templates select="." mode="getter"/>().getStringValue();
 		}
 
+	protected int find<xsl:value-of select="$titlename"/>ColumnIndex(final  DataTableSpec inSpec)
+		{
+		int index= inSpec.findColumnIndex(<xsl:apply-templates select="." mode="getter.value"/>());
+		
+		return index;
+		}
+	
+	protected int find<xsl:value-of select="$titlename"/>RequiredColumnIndex(final  DataTableSpec inSpec)
+		throws InvalidSettingsException
+		{
+		int index =  find<xsl:value-of select="$titlename"/>ColumnIndex(inSpec);
+		if(index == -1 )
+			{
+			throw new InvalidSettingsException("Node "+this.getClass().getName()+": cannot find column title= \"<xsl:apply-templates select="." mode="label"/>\"");
+			}
 
+		return index;
+		}
+	
 </xsl:when>
 
 <xsl:when test="@type='file-read' or @type='file-save'">
+<xsl:variable name="titlename">
+<xsl:call-template name="titleize">
+	<xsl:with-param name="s" select="@name"/>
+</xsl:call-template>
+</xsl:variable>
 	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
 	final static String <xsl:apply-templates select="." mode="default.name"/> = <xsl:choose>
 			<xsl:when test="@default">"<xsl:value-of select="@default"/>"</xsl:when>
@@ -1213,6 +1254,42 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 		{
 		return <xsl:apply-templates select="." mode="getter"/>().getStringValue();
 		}
+
+	<xsl:choose>
+		<xsl:when test="@type='file-read'">
+		
+		protected java.io.BufferedReader open<xsl:value-of select="$titlename"/>ForBufferedReader() throws java.io.IOException
+			{
+			return this.openUriForBufferedReader(<xsl:apply-templates select="." mode="getter.value"/>());
+			}
+		
+		</xsl:when>
+		<xsl:when test="@type='file-save'">
+
+		protected java.io.OutputStream open<xsl:value-of select="$titlename"/>ForWriting() throws java.io.IOException
+			{
+			String uri = <xsl:apply-templates select="." mode="getter.value"/>();
+			java.io.File file= new java.io.File(uri);
+			return this.openFileForWriting(file);
+			}
+
+		
+		protected java.io.PrintWriter open<xsl:value-of select="$titlename"/>ForPrinting() throws java.io.IOException
+			{
+			String uri = <xsl:apply-templates select="." mode="getter.value"/>();
+			java.io.File file= new java.io.File(uri);
+			if(file.getName().endsWith(".gz"))
+				{
+				return new java.io.PrintWriter(this.open<xsl:value-of select="$titlename"/>ForWriting()); 
+				}
+			else
+				{
+				return new java.io.PrintWriter(file); 
+				}
+			}
+		
+		</xsl:when>		
+	</xsl:choose>
 
 </xsl:when>
 
