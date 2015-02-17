@@ -179,6 +179,11 @@ public abstract class AbstractNodeModel
     		}
     	return tspecs;
     	}
+    	
+    
+    @Override	
+    protected abstract DataTableSpec[] configure(DataTableSpec[] inSpecs) throws org.knime.core.node.InvalidSettingsException;
+	
     
 	protected abstract DataTableSpec createOutDataTableSpec(int index);
 	
@@ -296,7 +301,39 @@ public abstract class AbstractNodeModel
 			}
 		return this.nodeUniqId;
 		}
-
+		
+	/** read input stream, decompress gzip if needed */
+	protected java.io. InputStream  openUriForInputStream(String uri) throws java.io.IOException
+		{
+		java.io.InputStream  input = null;
+		try
+			{
+			input= org.knime.core.util.FileUtil.openInputStream(uri);
+			}
+		catch(Exception err)
+			{
+			throw new java.io.IOException(err);
+			}
+		/* http://stackoverflow.com/questions/4818468 */
+		java.io.PushbackInputStream pb = new java.io.PushbackInputStream( input, 2 ); //we need a pushbackstream to look ahead
+     	byte [] signature = new byte[2];
+    	pb.read( signature ); //read the signature
+    	pb.unread( signature ); //push back the signature to the stream
+     	if( signature[ 0 ] == (byte) 0x1f &amp;&amp; signature[ 1 ] == (byte) 0x8b ) //check if matches standard gzip magic number
+       		return new java.util.zip.GZIPInputStream( pb );
+     	else 
+       		return pb;
+		}	
+		
+	/** read input reader, decompress gzip if needed */
+	protected java.io.BufferedReader openUriForBufferedReader(String uri) throws java.io.IOException
+		{
+		return new java.io.BufferedReader(
+			new java.io.InputStreamReader(
+			this.openUriForInputStream(uri)
+			));
+		}
+	
 	}
 
 </xsl:document>
@@ -320,7 +357,7 @@ public abstract class AbstractNodeModel
 <node>
 	<xsl:attribute name="category-path">
 		<xsl:apply-templates select=".." mode="path"/>
-		<xsl:apply-templates select=".." mode="label"/>
+		<xsl:value-of select="../@name"/>
 	</xsl:attribute>
     <xsl:attribute name="factory-class"><xsl:apply-templates select="." mode="package"/><xsl:text>.</xsl:text><xsl:apply-templates select="." mode="name"/>NodeFactory</xsl:attribute>
     <xsl:attribute name="id"><xsl:apply-templates select="." mode="package"/><xsl:text>.</xsl:text><xsl:apply-templates select="." mode="name"/>NodeFactory</xsl:attribute>   
@@ -344,31 +381,16 @@ public abstract class AbstractNodeModel
         <intro>
        		<xsl:apply-templates select="." mode="description"/>
        		
-       		Date: <xsl:value-of select="date:date-time()"/>
+       		
+       		This node was compiled on : <xsl:value-of select="date:date-time()"/>.
+       		Version: <xsl:apply-templates select="/plugin" mode="version"/>
 		</intro>
-        <xsl:for-each select="property">
-        	<option>
-        		   <xsl:attribute name="name"><xsl:apply-templates select="." mode="label"/></xsl:attribute>
-        		   <xsl:apply-templates select="." mode="short.desc"/>
-        	</option>
-        </xsl:for-each>
+		<xsl:apply-templates select="property" mode="nodeFactory.xml"/>
     </fullDescription>
     
     <ports>
-    	<xsl:for-each select="inPort">
-    		<inPort>
-    			<xsl:attribute name="index"><xsl:value-of select="position()-1"/></xsl:attribute>
-    			<xsl:attribute name="name"><xsl:apply-templates select="." mode="label"/></xsl:attribute>
-    			<xsl:apply-templates select="." mode="short.desc"/>
-    		</inPort>
-    	</xsl:for-each>
-    	<xsl:for-each select="outPort">
-    		<outPort>
-    			<xsl:attribute name="index"><xsl:value-of select="position()-1"/></xsl:attribute>
-    			<xsl:attribute name="name"><xsl:apply-templates select="." mode="label"/></xsl:attribute>
-    			<xsl:apply-templates select="." mode="short.desc"/>
-    		</outPort>
-    	</xsl:for-each>
+    	<xsl:apply-templates select="inPort" mode="nodeFactory.xml"/>
+    	<xsl:apply-templates select="outPort" mode="nodeFactory.xml"/>
     </ports>
 </knimeNode>
 </xsl:document >
@@ -515,6 +537,11 @@ package <xsl:apply-templates select="." mode="package"/>;
 import org.knime.core.node.defaultnodesettings.SettingsModel;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataColumnSpec;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.data.DataCell;
+import org.knime.core.data.DataType;
+import org.knime.core.data.def.StringCell;
+import org.knime.core.data.def.IntCell;
 
 
 
@@ -539,7 +566,26 @@ extends <xsl:choose>
 		}
 	
 	
-	 @Override
+
+	
+	
+	@Override 
+	protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException
+		{
+    	if(inSpecs==null || inSpecs.length!= <xsl:value-of select="count(inPort)"/>)
+			{
+			throw new InvalidSettingsException("Expected  <xsl:value-of select="count(inPort)"/> tables");
+			}
+    	DataTableSpec datatablespecs[] = new DataTableSpec[<xsl:value-of select="count(outPort)"/>];
+    	<xsl:for-each select="outPort">
+    	datatablespecs[<xsl:value-of select="position() -1 "/>] = configureOutDataTableSpec(<xsl:value-of select="position() -1 "/>,inSpecs);
+    	</xsl:for-each>
+    	return datatablespecs;
+    	}
+
+	
+	
+	@Override
     protected abstract org.knime.core.node.BufferedDataTable[] execute(
     		final org.knime.core.node.BufferedDataTable[] inData,
             final org.knime.core.node.ExecutionContext exec
@@ -551,26 +597,75 @@ extends <xsl:choose>
     	{
     	switch(index)
     		{
-    		<xsl:for-each select="outPort">case <xsl:value-of select="position() -1 "/> : return _createOutTableSpec<xsl:value-of select="position() -1 "/>();
+    		<xsl:for-each select="outPort">case <xsl:value-of select="position() -1 "/> : return createOutTableSpec<xsl:value-of select="position() -1 "/>();
     		</xsl:for-each>
     		default: throw new IllegalStateException();
     		}
     	}
-    	
+    /** configure output port for known-index for known inSpecs */	
+	protected DataTableSpec configureOutDataTableSpec(int index,DataTableSpec[] inSpecs) throws InvalidSettingsException
+		{
+		switch(index)
+    		{
+    		<xsl:for-each select="outPort">case <xsl:value-of select="position() -1 "/> : return configureOutTableSpec<xsl:value-of select="position() -1 "/>(inSpecs);
+    		</xsl:for-each>
+    		default: throw new IllegalStateException();
+    		}
+		}
+
 	<xsl:for-each select="outPort">
 	
-	/** create DataTableSpec for outport '0' <xsl:apply-templates select="." mode="label"/> */
-	protected DataTableSpec _createOutTableSpec<xsl:value-of select="position() -1 "/>()
+	
+	
+	protected DataCell[] createDataCellsForOutTableSpec<xsl:value-of select="position() -1 "/>(
+		<xsl:for-each select="column">
+			<xsl:if test="position()&gt;1">,</xsl:if>
+			<xsl:choose>
+				<xsl:when test="not(@type) or @type='string'">CharSequence </xsl:when>
+				<xsl:when test="'int'">java.lang.Integer </xsl:when>
+				<xsl:when test="'bool'">java.lang.Boolean </xsl:when>
+				<xsl:when test="'double'">java.lang.Double </xsl:when>
+				<xsl:otherwise><xsl:message terminate="yes">unknown type</xsl:message></xsl:otherwise>
+			</xsl:choose>
+			<xsl:text> </xsl:text>
+			<xsl:value-of select="@name"/>
+		</xsl:for-each>
+		)
+		{
+		DataCell __cells[]=new DataCell[<xsl:value-of select="count(column)"/>];
+		<xsl:for-each select="column">
+		<xsl:text>__cells[</xsl:text>
+		<xsl:value-of select="position() -1 "/>
+		<xsl:text> ] = </xsl:text>
+		<xsl:choose>
+				<xsl:when test="not(@type) or @type='string'">( <xsl:value-of select="@name"/> !=null? new StringCell( <xsl:value-of select="@name"/>.toString() ) :  DataType.getMissingCell() ) </xsl:when>
+				<xsl:when test="'int'"> ( <xsl:value-of select="@name"/> !=null? new IntCell( <xsl:value-of select="@name"/> ) :  DataType.getMissingCell() )</xsl:when>
+				<xsl:when test="'bool'"> ( <xsl:value-of select="@name"/> !=null? new BooleanCell( <xsl:value-of select="@name"/> ) :  DataType.getMissingCell() )</xsl:when>
+				<xsl:when test="'double'"> ( <xsl:value-of select="@name"/> !=null? new DoubleCell( <xsl:value-of select="@name"/> ) :  DataType.getMissingCell() )</xsl:when>
+				<xsl:otherwise><xsl:message terminate="yes">unknown type</xsl:message></xsl:otherwise>
+		</xsl:choose>
+		<xsl:text>;
+		</xsl:text>
+		</xsl:for-each>
+		return __cells;
+		}
+	
+	/** create DataTableSpec for outport '<xsl:value-of select="position() -1 "/>' <xsl:apply-templates select="." mode="label"/> */
+	protected DataTableSpec createOutTableSpec<xsl:value-of select="position() -1 "/>()
 		{
 		DataColumnSpec colspec;
 		DataColumnSpec colspecs[]=new DataColumnSpec[ <xsl:value-of select="count(column)"/> ];
-		<xsl:for-each select="outPort">
-		colspec = <xsl:apply-templates select="." mode="create.table.spec.decl"/>();
-    	colspecs[ <xsl:value-of select="position() -1 "/> ] = colspec;
+		<xsl:for-each select="column">
+		colspecs[ <xsl:value-of select="position() -1 "/> ] = <xsl:apply-templates select="." mode="create.data.column.spec"/>;
 		</xsl:for-each>
     	return new DataTableSpec(colspecs);
 		}
 	
+	/** create DataTableSpec for outport '<xsl:value-of select="position() -1 "/>' <xsl:apply-templates select="." mode="label"/> for known DataTableSpec */
+	protected DataTableSpec configureOutTableSpec<xsl:value-of select="position() -1 "/>(DataTableSpec[] inSpecs) throws InvalidSettingsException
+		{
+		return this.createOutTableSpec<xsl:value-of select="position() -1 "/>();
+		}	
 	</xsl:for-each>
 	
 
@@ -596,7 +691,10 @@ extends <xsl:choose>
 package <xsl:apply-templates select="." mode="package"/>;
 import org.knime.core.node.*;
 import org.knime.core.data.*;
+
+/** BEGIN user imports */
 <xsl:apply-templates select="code/import"/>
+/** END user imports */
 
 @javax.annotation.Generated("xslt-sandbox/knime2java")
 public class <xsl:apply-templates select="." mode="name"/>NodeModel
@@ -608,9 +706,15 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 		
 	<xsl:choose>
 	<xsl:when test="code/body">
+		/** BEGIN user code/body */
 		<xsl:apply-templates select="code/body"/>
+		/** END user code/body */
 	</xsl:when>
 	<xsl:otherwise>
+	
+
+	
+	
 	@Override
     protected BufferedDataTable[] execute(
     		final BufferedDataTable[] inData,
@@ -729,6 +833,14 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 <xsl:value-of select="concat(translate($package,'.','/'),'/')"/>
 </xsl:template>
 
+<!-- ========================================================================================= -->
+<!-- ========================================================================================= -->
+<!-- ========================================================================================= -->
+
+
+<xsl:template match="category">
+<xsl:apply-templates select=".//node"/>
+</xsl:template>
 
 
 <xsl:template match="category" mode="plugin.xml">
@@ -739,7 +851,9 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
   		<xsl:attribute name="path"><xsl:apply-templates select="." mode="path"/></xsl:attribute>
   		<xsl:attribute name="description"><xsl:apply-templates select="." mode="description"/></xsl:attribute>
   	</category>
+  	<!-- apply child node in that category -->
   	<xsl:apply-templates select="category" mode="plugin.xml"/>
+  	
 </xsl:template>
 
 <xsl:template match="category" mode="description">
@@ -753,33 +867,26 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 <xsl:template match="category" mode="label">
 <xsl:choose>
 	<xsl:when test="@label"><xsl:value-of select="@label"/></xsl:when>
-	<xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
+	<xsl:otherwise>
+		<xsl:call-template name="titleize">
+			<xsl:with-param name="s">
+				<xsl:value-of select="@name"/>
+			</xsl:with-param>
+		</xsl:call-template>
+	</xsl:otherwise>
 </xsl:choose>
 </xsl:template>
 
 <xsl:template match="category" mode="path">
-
 <xsl:choose>
 	<xsl:when test="name(..)='plugin'">
 		<xsl:text>/community/</xsl:text>
-		<xsl:value-of select="../@name"/>
 	</xsl:when>
 	<xsl:otherwise>
 		<xsl:apply-templates select=".." mode="path"/>
+		<xsl:value-of select="../@name"/>
+		<xsl:text>/</xsl:text>
 	</xsl:otherwise>
-</xsl:choose>
-
-<xsl:choose>
-	<xsl:when test="@path"><xsl:value-of select="@path"/></xsl:when>
-	<xsl:otherwise>
-	</xsl:otherwise>
-</xsl:choose>
-</xsl:template>
-
-<xsl:template match="category" mode="description">
-<xsl:choose>
-	<xsl:when test="description"><xsl:value-of select="description"/></xsl:when>
-	<xsl:otherwise><xsl:apply-templates select="." mode="label"/></xsl:otherwise>
 </xsl:choose>
 </xsl:template>
 
@@ -801,18 +908,24 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 </xsl:template>
 
 
-<xsl:template match="category">
-<xsl:apply-templates select=".//node"/>
-</xsl:template>
 
+<!-- ========================================================================================= -->
+<!-- ========================================================================================= -->
+<!-- ========================================================================================= -->
 
 
 <xsl:template match="node" mode="package">
 <xsl:choose>
 	<xsl:when test="@package"><xsl:value-of select="@package"/></xsl:when>
 	<xsl:otherwise>
-		<xsl:apply-templates select=".." mode="package"/>
+		<xsl:apply-templates select="/plugin" mode="package"/>
 		<xsl:text>.</xsl:text>
+		<xsl:for-each select="ancestor::category">
+				<xsl:call-template name="tolowercase">
+					<xsl:with-param name="s"><xsl:value-of select="@name"/></xsl:with-param>
+				</xsl:call-template>
+				<xsl:text>.</xsl:text>
+		</xsl:for-each>
 		<xsl:call-template name="tolowercase">
 			<xsl:with-param name="s"><xsl:apply-templates select="." mode="name"/></xsl:with-param>
 		</xsl:call-template>
@@ -869,13 +982,12 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 <xsl:value-of select="concat('/',translate($package,'.','/'),'/')"/>
 </xsl:template>
 
+<!-- ========================================================================================= -->
+<!-- ========================================================================================= -->
+<!-- ========================================================================================= -->
 
-<xsl:template match="property" mode="label">
-	<xsl:choose>
-		<xsl:when test="label"><xsl:value-of select="label"/></xsl:when>
-		<xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
-	</xsl:choose>
-</xsl:template>
+
+
 
 
 <xsl:template match="property" mode="todo2">
@@ -1177,15 +1289,21 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 
 <xsl:when test="@type='file-read'">
 <xsl:variable name="port" select="@port"/>
-		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentFileChooser(
+<xsl:variable name="chooser" select="concat('chooser_read_',generate-id())"/>
+		
+		org.knime.core.node.defaultnodesettings.DialogComponentFileChooser <xsl:value-of select="$chooser"/> = new org.knime.core.node.defaultnodesettings.DialogComponentFileChooser(
 					new org.knime.core.node.defaultnodesettings.SettingsModelString(
 						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="config.name"/>,
 						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="default.name"/>
 						),
 					"<xsl:value-of select="generate-id(.)"/>",/* historyID */
 					javax.swing.JFileChooser.OPEN_DIALOG
-					<xsl:for-each select="extension">,"<xsl:value-of select="."/></xsl:for-each>
-					));
+					<xsl:for-each select="extension">,"<xsl:value-of select="."/>"</xsl:for-each>
+					);
+		<xsl:value-of select="$chooser"/>.setAllowRemoteURLs(true);
+		<xsl:value-of select="$chooser"/>.setBorderTitle("<xsl:apply-templates select="." mode="label"/>");
+		<xsl:value-of select="$chooser"/>.setToolTipText("<xsl:apply-templates select="." mode="description"/>");
+		this.addDialogComponent(<xsl:value-of select="$chooser"/> );
 </xsl:when>
 
 <xsl:when test="@type='file-save'">
@@ -1250,6 +1368,24 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 </xsl:template>
 
 
+<xsl:template match="property" mode="label">
+	<xsl:choose>
+		<xsl:when test="@label"><xsl:value-of select="@label"/></xsl:when>
+		<xsl:when test="label"><xsl:value-of select="label"/></xsl:when>
+		<xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
+	</xsl:choose>
+</xsl:template>
+
+<xsl:template match="property" mode="description">
+	<xsl:choose>
+		<xsl:when test="@description"><xsl:value-of select="@description"/></xsl:when>
+		<xsl:when test="description"><xsl:value-of select="description"/></xsl:when>
+		<xsl:otherwise><xsl:apply-templates select="." mode="label"/></xsl:otherwise>
+	</xsl:choose>
+</xsl:template>
+
+
+
 <xsl:template match="property" mode="default.name">
 <xsl:text>DEFAULT_</xsl:text>
 <xsl:call-template name="touppercase">
@@ -1257,6 +1393,55 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 </xsl:call-template>
 </xsl:template>
 
+
+<xsl:template match="property" mode="nodeFactory.xml">
+<option>
+   <xsl:attribute name="name"><xsl:apply-templates select="." mode="label"/></xsl:attribute>
+   <xsl:apply-templates select="." mode="description"/>
+   <xsl:text>:</xsl:text>
+   <xsl:choose>
+   	<xsl:when test="@type='file-read'"><xsl:text> A file Reader.</xsl:text></xsl:when>
+   	<xsl:otherwise>Node type: <xsl:value-of select="@type"/>.</xsl:otherwise>
+   </xsl:choose>
+   <xsl:if test="extension">
+   		<xsl:text> The valid file extensions are: </xsl:text>
+   		<xsl:for-each select="extension">
+   			<xsl:if test="position()&gt;1">,</xsl:if>
+   			<xsl:text>"</xsl:text>
+   			<xsl:value-of select="text()"/>
+   			<xsl:text>"</xsl:text>
+   		</xsl:for-each>
+   		<xsl:text>.</xsl:text>
+   </xsl:if>
+</option>
+</xsl:template>
+
+<!-- ========================================================================================= -->
+<!-- ========================================================================================= -->
+<!-- ========================================================================================= -->
+<xsl:template match="inPort" mode="nodeFactory.xml">
+<inPort>
+	<xsl:attribute name="index"><xsl:value-of select="count(ancestor::inPort)"/></xsl:attribute>
+	<xsl:attribute name="name"><xsl:apply-templates select="." mode="label"/></xsl:attribute>
+	<xsl:apply-templates select="." mode="description"/>
+	<xsl:if test="column">
+		<xsl:text>Columns: </xsl:text>
+		<xsl:apply-templates select="column" mode="nodeFactory.xml"/>
+	</xsl:if>
+</inPort>
+</xsl:template>
+
+<xsl:template match="outPort" mode="nodeFactory.xml">
+<outPort>
+	<xsl:attribute name="index"><xsl:value-of select="count(ancestor::outPort)"/></xsl:attribute>
+	<xsl:attribute name="name"><xsl:apply-templates select="." mode="label"/></xsl:attribute>
+	<xsl:apply-templates select="." mode="description"/>
+	<xsl:if test="column">
+		<xsl:text>Columns: </xsl:text>
+		<xsl:apply-templates select="column" mode="nodeFactory.xml"/>
+	</xsl:if>
+</outPort>
+</xsl:template>
 
 <xsl:template match="inPort|outPort" mode="label">
 <xsl:choose>
@@ -1266,6 +1451,72 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 		<xsl:value-of select="@name"/>
 	</xsl:otherwise>
 </xsl:choose>
+</xsl:template>
+
+
+<xsl:template match="inPort|outPort" mode="description">
+<xsl:choose>
+	<xsl:when test="@description"><xsl:value-of select="@description"/></xsl:when>
+	<xsl:when test="description"><xsl:value-of select="description"/></xsl:when>
+	<xsl:otherwise>
+		<xsl:apply-templates select="." mode="label"/>
+	</xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+<!-- ========================================================================================= -->
+<!-- ========================================================================================= -->
+<!-- ========================================================================================= -->
+
+<xsl:template match="column" mode="nodeFactory.xml">
+		<xsl:if test="count(preceding-sibling::column)&gt;0">
+			<xsl:text>, </xsl:text>
+		</xsl:if>
+		<xsl:text>"</xsl:text>
+		<xsl:apply-templates select="." mode="label"/>
+		<xsl:text>" [type:</xsl:text>
+		<xsl:choose>
+			<xsl:when test="not(@type)">String</xsl:when>
+			<xsl:otherwise><xsl:value-of select="@type"/></xsl:otherwise>
+		</xsl:choose>
+		<xsl:text>]</xsl:text>
+</xsl:template>
+
+
+<xsl:template match="column" mode="label">
+<xsl:choose>
+	<xsl:when test="@label"><xsl:value-of select="@label"/></xsl:when>
+	<xsl:when test="label"><xsl:value-of select="label"/></xsl:when>
+	<xsl:otherwise>
+		<xsl:value-of select="@name"/>
+	</xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+
+<xsl:template match="column" mode="create.data.column.spec">
+	<xsl:text>new org.knime.core.data.DataColumnSpecCreator("</xsl:text>
+	<xsl:apply-templates select="." mode="label"/>
+	<xsl:text>",org.knime.core.data.DataType.getType(</xsl:text>
+<xsl:choose>
+	<xsl:when test="not(@type) or @type='string'">
+		<xsl:text>org.knime.core.data.def.StringCell</xsl:text>
+	</xsl:when>
+	<xsl:when test="@type='int'">
+		<xsl:text>org.knime.core.data.def.IntCell</xsl:text>
+	</xsl:when>
+	<xsl:when test="@type='double'">
+		<xsl:text>org.knime.core.data.def.DoubleCell</xsl:text>
+	</xsl:when>
+	<xsl:when test="@type='bool'">
+		<xsl:text>org.knime.core.data.def.BooleanCell</xsl:text>
+	</xsl:when>
+	<xsl:otherwise>
+		<xsl:message terminate="yes">
+			unknown type
+		</xsl:message>	
+	</xsl:otherwise>
+</xsl:choose>
+<xsl:text>.class)).createSpec()</xsl:text>
+
 </xsl:template>
 
 
