@@ -138,6 +138,8 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortType;
 import org.knime.core.util.FileUtil;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DataType;
+import org.knime.core.node.defaultnodesettings.SettingsModelColumnName;
 
 /**
  * date: <xsl:value-of select="date:date-time()"/>
@@ -334,6 +336,40 @@ public abstract class AbstractNodeModel
 			));
 		}
 	
+	
+	/** throws an InvalidSettingsException if column was not found */
+    public int findColumnIndex(DataTableSpec dataTableSpec,String name)
+		throws InvalidSettingsException
+		{
+		int index;
+		if((index=dataTableSpec.findColumnIndex(name))==-1)
+			{
+			throw new InvalidSettingsException("Node "+this.getClass().getName()+": cannot find column title= \""+name+"\"");
+			}
+		return index;
+		}
+	
+	 /** throws an InvalidSettingsException if column was not found */
+	public int findColumnIndex(DataTableSpec dataTableSpec,String name,DataType dataType)
+	throws InvalidSettingsException
+		{
+		if(name==null) throw new NullPointerException("undefined column name");
+		int index=findColumnIndex(dataTableSpec,name);
+		if(dataTableSpec.getColumnSpec(name).getType()!=dataType)
+			{
+			throw new InvalidSettingsException("Node "+this.getClass().getName()+" column["+index+"]=\""+name+"\" is not a \""+dataType+"\" but a \""+dataTableSpec.getColumnSpec(name).getType()+"\"");
+			}
+		return index;
+		}
+	
+	public int findColumnIndex(DataTableSpec dataTableSpec,SettingsModelColumnName colName,DataType dataType)
+		throws InvalidSettingsException
+		{
+		return findColumnIndex(dataTableSpec,colName.getColumnName(),dataType);
+		}
+
+	
+	
 	}
 
 </xsl:document>
@@ -378,14 +414,24 @@ public abstract class AbstractNodeModel
     <name><xsl:apply-templates select="." mode="label"/></name>
     <shortDescription><xsl:apply-templates select="."  mode="short.desc"/></shortDescription>    
     <fullDescription>
-        <intro>
-       		<xsl:apply-templates select="." mode="description"/>
-       		
-       		
-       		This node was compiled on : <xsl:value-of select="date:date-time()"/>.
+        <intro><xsl:apply-templates select="." mode="description"/>
+        
+        
+        <xsl:if test="code/body">
+        <h3>Source code</h3>
+		Main source code:<pre><xsl:apply-templates select="code/body"/></pre> 
+		</xsl:if>
+
+        <h3>Compilation</h3>
+        This node was compiled on : <xsl:value-of select="date:date-time()"/>.
        		Version: <xsl:apply-templates select="/plugin" mode="version"/>
-		</intro>
 		<xsl:apply-templates select="property" mode="nodeFactory.xml"/>
+        
+        </intro>
+		
+		
+		
+		
     </fullDescription>
     
     <ports>
@@ -664,6 +710,11 @@ extends <xsl:choose>
 	/** create DataTableSpec for outport '<xsl:value-of select="position() -1 "/>' <xsl:apply-templates select="." mode="label"/> for known DataTableSpec */
 	protected DataTableSpec configureOutTableSpec<xsl:value-of select="position() -1 "/>(DataTableSpec[] inSpecs) throws InvalidSettingsException
 		{
+		<xsl:for-each select="../property[@type=column">
+		/* this.findColumnIndex(inSpecs[0],m_column.getColumnName()); */
+		</xsl:for-each>
+		
+		
 		return this.createOutTableSpec<xsl:value-of select="position() -1 "/>();
 		}	
 	</xsl:for-each>
@@ -1263,7 +1314,12 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 </xsl:when>
 
 <xsl:when test="@type='column'">
-<xsl:variable name="port" select="@port"/>
+<!-- get the name of the por for this column : default @port then, uniq port if there is one -->
+<xsl:variable name="port">
+<xsl:apply-templates select="." mode="port-name"/>
+</xsl:variable>
+
+
 		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentColumnNameSelection(
 					new org.knime.core.node.defaultnodesettings.SettingsModelColumnName(
 						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="config.name"/>,
@@ -1273,6 +1329,36 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 					<xsl:for-each select="../inPort">
 						<xsl:if test="@name = $port"><xsl:value-of select="position() - 1"/> /* inSpsec '<xsl:value-of select="@name"/>' */</xsl:if>
 					</xsl:for-each>,
+					<xsl:choose>
+						<xsl:when test="@required='false'">false</xsl:when>
+						<xsl:otherwise>true</xsl:otherwise>
+					</xsl:choose>, /* isRequired */
+					<xsl:choose>
+						<xsl:when test="@none='true'">true</xsl:when>
+						<xsl:otherwise>false</xsl:otherwise>
+					</xsl:choose> /* addNoneCol "if a none option should be added to the column list" */
+					<xsl:choose>
+					<xsl:when test="count(type)&gt;0">
+						<xsl:for-each select="type">
+							<xsl:if test="position()&gt;1">,</xsl:if>
+							<xsl:choose>
+								<xsl:when test="text()='int'">org.knime.core.data.IntValue.class</xsl:when>
+								<xsl:when test="text()='string'">org.knime.core.data.StringValue.class</xsl:when>
+								<xsl:when test="text()='double'">org.knime.core.data.DoubleValue.class</xsl:when>
+								<xsl:otherwise><xsl:message terminate="yes">Not implemented</xsl:message></xsl:otherwise>
+							</xsl:choose>
+						</xsl:for-each>
+					</xsl:when>
+					<xsl:when test="@data-type">
+							<xsl:text>,</xsl:text>
+							<xsl:choose>
+								<xsl:when test="@data-type='int'">org.knime.core.data.IntValue.class</xsl:when>
+								<xsl:when test="@data-type='string'">org.knime.core.data.StringValue.class</xsl:when>
+								<xsl:when test="@data-type='double'">org.knime.core.data.DoubleValue.class</xsl:when>
+								<xsl:otherwise><xsl:message terminate="yes">Not implemented</xsl:message></xsl:otherwise>
+							</xsl:choose>
+					</xsl:when>
+					<xsl:when test="filter">,
 					new  org.knime.core.node.util.ColumnFilter() {
 						@Override
 						public boolean includeColumn(org.knime.core.data.DataColumnSpec dcs) {
@@ -1284,6 +1370,9 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 							return "Cannot find any valid column for <xsl:apply-templates select="." mode="label"/>";
 						}
 					}
+					</xsl:when>
+					<xsl:otherwise><xsl:message terminate="yes">you mist specify DialogComponentColumnNameSelection</xsl:message></xsl:otherwise>
+					</xsl:choose>
 					));
 </xsl:when>
 
@@ -1331,6 +1420,16 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 </xsl:otherwise>
 </xsl:choose>
 </xsl:template>
+
+<xsl:template match="property" mode="port-name">
+<xsl:choose>
+ <xsl:when test="@port"><xsl:value-of select="@port"/></xsl:when>
+ <xsl:when test="count(../inPort)=1"><xsl:value-of select="../inPort/@name"/></xsl:when>
+ <xsl:otherwise><xsl:message terminate="yes">Boum</xsl:message></xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+
+
 
 
 <xsl:template match="property" mode="getter">
@@ -1519,6 +1618,12 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 
 </xsl:template>
 
+<!-- ========================================================================================= -->
+<!-- ========================================================================================= -->
+<!-- ========================================================================================= -->
 
+<xsl:template match="body">
+<xsl:apply-templates select="*|text()"/>
+</xsl:template>
 
 </xsl:stylesheet>
