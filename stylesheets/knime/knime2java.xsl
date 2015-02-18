@@ -83,7 +83,7 @@ install: dist/<xsl:apply-templates select="." mode="package"/>_${plugin.version}
 dist/<xsl:apply-templates select="." mode="package"/>_${plugin.version}.jar : dist/<xsl:value-of select="$jar.name"/>.jar  $(subst :, ,${extra.jars})
 	rm -f $@ 
 	mkdir -p ${tmp.dir}/META-INF $(dir $@)
-	cat MANIFEST.MF | sed 's%___EXTRAJARS___%$(subst :,$(COMMA),${extra.jars})%g' | awk '{S=$$0;i=0;while(length(S)&gt;70) {printf("%s%s\n",(i==0?"":" "),substr(S,1,70));S=substr(S,71);i++;} printf("%s%s\n",(i==0?"":" "),S);}' &gt; ${tmp.dir}/META-INF/MANIFEST.MF
+	cat MANIFEST.MF | sed 's%___EXTRAJARS___%$(subst $(SPACE),$(COMMA),$(notdir $(subst :,$(SPACE),${extra.jars})))%g' | awk '{S=$$0;i=0;while(length(S)&gt;70) {printf("%s%s\n",(i==0?"":" "),substr(S,1,70));S=substr(S,71);i++;} printf("%s%s\n",(i==0?"":" "),S);}' &gt; ${tmp.dir}/META-INF/MANIFEST.MF
 	cp plugin.xml ${tmp.dir}
 	cp $(filter %.jar,$^) ${tmp.dir}
 	jar cmvf ${tmp.dir}/META-INF/MANIFEST.MF $@  -C ${tmp.dir} .
@@ -308,6 +308,13 @@ public abstract class AbstractNodeModel
 			}
 		return this.nodeUniqId;
 		}
+	
+	/** return a name describing this type of node */
+	protected String getNodeName()
+		{
+		return this.getClass().getSimpleName();
+		}	
+		
 		
 	/** read input stream, decompress gzip if needed */
 	protected java.io. InputStream  openUriForInputStream(String uri) throws java.io.IOException
@@ -612,8 +619,8 @@ import org.knime.core.data.def.IntCell;
 @javax.annotation.Generated("xslt-sandbox/knime2java")
 public abstract class Abstract<xsl:apply-templates select="." mode="name"/>NodeModel
 extends <xsl:choose>
-	<xsl:when test="string-length(@extends)&gt;0">
-		<xsl:value-of select="@extends"/>
+	<xsl:when test="string-length(@extends-model)&gt;0">
+		<xsl:value-of select="@extends-model"/>
 	</xsl:when>
 	<xsl:otherwise>
 	 <xsl:apply-templates select="/plugin" mode="package"/>
@@ -629,8 +636,12 @@ extends <xsl:choose>
 		super( <xsl:value-of select="count(inPort)"/>, <xsl:value-of select="count(outPort)"/> );
 		}
 	
-	
-
+	/** get 'this' , shortcut to be used by internal generated classes to get an universal
+	   handler to the parant class */ 
+	public <xsl:apply-templates select="." mode="name"/>NodeModel getOwnerNode()
+		{
+		return <xsl:apply-templates select="." mode="name"/>NodeModel.class.cast(this);
+		}
 	
 	
 	@Override 
@@ -648,13 +659,6 @@ extends <xsl:choose>
     	}
 
 	
-	
-	@Override
-    protected abstract org.knime.core.node.BufferedDataTable[] execute(
-    		final org.knime.core.node.BufferedDataTable[] inData,
-            final org.knime.core.node.ExecutionContext exec
-            ) throws Exception;
-			
 	
 	@Override
     protected DataTableSpec createOutDataTableSpec(int index)
@@ -717,7 +721,6 @@ extends <xsl:choose>
 	/** create DataTableSpec for outport '<xsl:value-of select="position() -1 "/>' <xsl:apply-templates select="." mode="label"/> */
 	protected DataTableSpec createOutTableSpec<xsl:value-of select="position() -1 "/>()
 		{
-		DataColumnSpec colspec;
 		DataColumnSpec colspecs[]=new DataColumnSpec[ <xsl:value-of select="count(column)"/> ];
 		<xsl:for-each select="column">
 		colspecs[ <xsl:value-of select="position() -1 "/> ] = <xsl:apply-templates select="." mode="create.data.column.spec"/>;
@@ -746,6 +749,7 @@ extends <xsl:choose>
     	</xsl:for-each>
     	return list;
     	}
+    
 	
 	}
 
@@ -773,7 +777,8 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 	public <xsl:apply-templates select="." mode="name"/>NodeModel()
 		{
 		}
-		
+	
+	
 	<xsl:choose>
 	<xsl:when test="code/body">
 		/** BEGIN user code/body */
@@ -1302,7 +1307,7 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 
 
 <!-- string -->
-<xsl:otherwise>
+<xsl:when test='not(@type) or @type="string"'>
 	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
 	
 	<xsl:choose>
@@ -1348,7 +1353,53 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 		}
 	
 
+</xsl:when>
+
+
+<xsl:when test='@type="strings"'>
+	final static String <xsl:apply-templates select="." mode="config.name"/> = "<xsl:apply-templates select="." mode="config.name"/>";
+	
+	final static String <xsl:apply-templates select="." mode="enum.name"/>[] = <xsl:choose>
+	 <xsl:when test="code">
+	 	<xsl:apply-templates select="code"/>
+	 </xsl:when>
+	 <xsl:otherwise>  new String[]{
+		<xsl:for-each select="enum"><xsl:if test="position()&gt;1">,</xsl:if>
+		"<xsl:value-of select="text()"/>"</xsl:for-each>
+		};
+	</xsl:otherwise>
+	</xsl:choose>
+	
+	final static String[] <xsl:apply-templates select="." mode="default.name"/> = <xsl:apply-templates select="." mode="enum.name"/>;
+	
+	protected org.knime.core.node.defaultnodesettings.SettingsModelStringArray <xsl:apply-templates select="." mode="variable.name"/> = 
+		new  org.knime.core.node.defaultnodesettings.SettingsModelStringArray(
+			<xsl:apply-templates select="." mode="config.name"/>,
+			<xsl:apply-templates select="." mode="default.name"/>
+			);
+
+
+	protected org.knime.core.node.defaultnodesettings.SettingsModelStringArray <xsl:apply-templates select="." mode="getter"/>()
+		{
+		return this.<xsl:apply-templates select="." mode="variable.name"/>;
+		}
+	
+	protected String[] <xsl:apply-templates select="." mode="getter.value"/>()
+		{
+		return <xsl:apply-templates select="." mode="getter"/>().getStringArrayValue();
+		}
+	
+
+</xsl:when>
+
+
+
+<xsl:otherwise>
+  <xsl:message terminate="yes">
+  Model header : Undefined type "<xsl:value-of select="@type"/>"
+  </xsl:message>
 </xsl:otherwise>
+
 </xsl:choose>
 </xsl:template>
 
@@ -1490,8 +1541,8 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 					));
 </xsl:when>
 
+<xsl:when test="not(@type) or @type='string'">
 
-<xsl:otherwise>
 		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentMultiLineString(
 					new org.knime.core.node.defaultnodesettings.SettingsModelString(
 						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="config.name"/>,
@@ -1499,7 +1550,35 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 						),
 					"<xsl:apply-templates select="." mode="label"/>",false,80,25
 					));
+</xsl:when>
 
+<xsl:when test="@type='strings'">
+<xsl:variable name="setting" select="concat('_',generate-id())"/>
+	org.knime.core.node.defaultnodesettings.SettingsModelStringArray <xsl:value-of select="$setting"/> = new org.knime.core.node.defaultnodesettings.SettingsModelStringArray(
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="config.name"/>,
+						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="default.name"/>
+						);
+	
+		this.addDialogComponent(new org.knime.core.node.defaultnodesettings.DialogComponentStringListSelection(
+					<xsl:value-of select="$setting"/>,
+					"<xsl:apply-templates select="." mode="label"/>",
+					java.util.Arrays.asList(<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="enum.name"/>),
+					<xsl:choose>
+						<xsl:when test="@required='false'">false</xsl:when>
+						<xsl:otherwise>true</xsl:otherwise>
+					</xsl:choose>, /* isRequired */
+					<xsl:choose>
+						<xsl:when test="@visible"><xsl:value-of select="@visible"/></xsl:when>
+						<xsl:otherwise>10</xsl:otherwise>
+					</xsl:choose> /* visibleRowCount */
+					));
+</xsl:when>
+
+
+
+
+<xsl:otherwise>
+	<xsl:message terminate="yes">Error Dialog: undefined type: <xsl:value-of select="@type"/></xsl:message>
 </xsl:otherwise>
 </xsl:choose>
 </xsl:template>
@@ -1676,7 +1755,7 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 
 <xsl:template match="column" mode="create.data.column.spec">
 	<xsl:text>new org.knime.core.data.DataColumnSpecCreator("</xsl:text>
-	<xsl:apply-templates select="." mode="label"/>
+	<xsl:value-of select="@name"/>
 	<xsl:text>",org.knime.core.data.DataType.getType(</xsl:text>
 <xsl:choose>
 	<xsl:when test="not(@type) or @type='string'">
