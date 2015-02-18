@@ -2,20 +2,25 @@
 <xsl:stylesheet
         xmlns:xsl='http://www.w3.org/1999/XSL/Transform'
         xmlns:date="http://exslt.org/dates-and-times" 
+        xmlns:xi="http://www.w3.org/2001/XInclude"
 		version='1.0'
-		exclude-result-prefixes="date"
+		exclude-result-prefixes="date xi"
         >
-<xsl:import href="../util/util.xsl"/>
-<xsl:output method="text"/>
-<xsl:param name="base.dir">TMP</xsl:param>
-<xsl:variable name="default-icon16">iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAadEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjExR/NCNwAAAMFJREFUOE+lU1ERgzAUqwMkIAEJSEDKJCABCUiYBCTsa9+VMAldHiR3pbxBt+UuXJvkvQ8CIaX0F0+RnuFm5PU7YLABX2RDuR4YmsBETpTrgIE2GxZb2tdAeCmGjQvtcyDYF4M5e8Y+A6GoMPjgWYyM+UDAalvDlKRZE1oy0toDhmrbLTDQUyt+rRBnBg4LBOhaMlPaAKGj4S7A3XsfHe01cKiNun0P91zPuNWKw1AY4uhoJQdboNp+YcTT/03rmMIbIBaXYlrHs80AAAAASUVORK5CYII=</xsl:variable>
 <!--
 Author:
         Pierre Lindenbaum @yokofakun
         http://plindenbaum.blogspot.com
-
    
 -->
+
+<xsl:import href="../util/util.xsl"/>
+<xsl:output method="text"/>
+<xsl:param name="base.dir">TMP</xsl:param>
+<xsl:param name="extra.source.dir"></xsl:param>
+<xsl:param name="extra.jars"></xsl:param>
+
+<xsl:variable name="default-icon16">iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAadEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjExR/NCNwAAAMFJREFUOE+lU1ERgzAUqwMkIAEJSEDKJCABCUiYBCTsa9+VMAldHiR3pbxBt+UuXJvkvQ8CIaX0F0+RnuFm5PU7YLABX2RDuR4YmsBETpTrgIE2GxZb2tdAeCmGjQvtcyDYF4M5e8Y+A6GoMPjgWYyM+UDAalvDlKRZE1oy0toDhmrbLTDQUyt+rRBnBg4LBOhaMlPaAKGj4S7A3XsfHe01cKiNun0P91zPuNWKw1AY4uhoJQdboNp+YcTT/03rmMIbIBaXYlrHs80AAAAASUVORK5CYII=</xsl:variable>
+
 <xsl:template match="/">
 <xsl:apply-templates select="plugin"/>
 </xsl:template>
@@ -34,7 +39,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: <xsl:apply-templates select="." mode="label"/> Compiled on <xsl:value-of select="date:date-time()"/>
 Bundle-SymbolicName: <xsl:for-each select="category//node"><xsl:if test="position()=1"><xsl:apply-templates select="." mode="package"/></xsl:if></xsl:for-each>; singleton:=true
 Bundle-Version: <xsl:apply-templates select="." mode="version"/>
-Bundle-ClassPath: <xsl:value-of select="$jar.name"/>.jar
+Bundle-ClassPath: <xsl:value-of select="$jar.name"/>.jar<xsl:if test="string-length($extra.jars)&gt;0">,___EXTRAJARS___</xsl:if>
 Bundle-Activator: <xsl:for-each select="category//node"><xsl:if test="position()=1"><xsl:apply-templates select="." mode="package"/>.<xsl:apply-templates select="." mode="name"/>NodePlugin</xsl:if></xsl:for-each>
 Bundle-Vendor: Pierre Lindenbaum
 Require-Bundle: org.eclipse.core.runtime,org.knime.workbench.core,org.knime.workbench.repository,org.knime.base
@@ -48,9 +53,12 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 .PHONY=all clean install
 SHELL=/bin/bash
 tmp.dir=tmp
+extra.source.dir=<xsl:value-of select="$extra.source.dir"/>
+extra.jars=<xsl:value-of select="$extra.jars"/>
 plugin.version=<xsl:apply-templates select="." mode="version"/>
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
+COMMA := ,
 
 feature.dir=${tmp.dir}/feature/<xsl:apply-templates select="." mode="package"/>.feature_${plugin.version}
 plugin.dir=${tmp.dir}/plugins/<xsl:apply-templates select="." mode="package"/>_${plugin.version}
@@ -64,9 +72,6 @@ endif
 knime.jars=$(shell find ${knime.root}/plugins -type f -name "knime-core.jar" -o -name "org.knime.core.util_*.jar" -o -name "org.eclipse.osgi_*.jar" -o -name "xbean*.jar" -o -name "org.eclipse.core.runtime_*.jar")
 
 
-
-
-
 JAVAC?=javac
 
 all: dist/<xsl:apply-templates select="." mode="package"/>_${plugin.version}.jar 
@@ -75,22 +80,22 @@ install: dist/<xsl:apply-templates select="." mode="package"/>_${plugin.version}
 	rm -f ${knime.root}/plugins/<xsl:apply-templates select="." mode="package"/>_*.jar
 	cp $&lt; ${knime.root}/plugins/
 
-dist/<xsl:apply-templates select="." mode="package"/>_${plugin.version}.jar : dist/<xsl:value-of select="$jar.name"/>.jar
+dist/<xsl:apply-templates select="." mode="package"/>_${plugin.version}.jar : dist/<xsl:value-of select="$jar.name"/>.jar  $(subst :, ,${extra.jars})
 	rm -f $@ 
 	mkdir -p ${tmp.dir}/META-INF $(dir $@)
-	cat MANIFEST.MF | awk '{S=$$0;i=0;while(length(S)&gt;70) {printf("%s%s\n",(i==0?"":" "),substr(S,1,70));S=substr(S,71);i++;} printf("%s%s\n",(i==0?"":" "),S);}' &gt; ${tmp.dir}/META-INF/MANIFEST.MF
+	cat MANIFEST.MF | sed 's%___EXTRAJARS___%$(subst :,$(COMMA),${extra.jars})%g' | awk '{S=$$0;i=0;while(length(S)&gt;70) {printf("%s%s\n",(i==0?"":" "),substr(S,1,70));S=substr(S,71);i++;} printf("%s%s\n",(i==0?"":" "),S);}' &gt; ${tmp.dir}/META-INF/MANIFEST.MF
 	cp plugin.xml ${tmp.dir}
-	cp $&lt; ${tmp.dir}
+	cp $(filter %.jar,$^) ${tmp.dir}
 	jar cmvf ${tmp.dir}/META-INF/MANIFEST.MF $@  -C ${tmp.dir} .
 	rm -rf ${tmp.dir}
 	
 
-dist/<xsl:value-of select="$jar.name"/>.jar : ${knime.jars}
+dist/<xsl:value-of select="$jar.name"/>.jar : ${knime.jars} $(subst :, ,${extra.jars})
 	mkdir -p $(dir $@) ${tmp.dir}/icons
-	cp -r src/. ${tmp.dir}<xsl:for-each select="category//node">
+	cp -r src/. $(addsuffix /.,$(subst :, ,${extra.source.dir}) ) ${tmp.dir}<xsl:for-each select="category//node">
 	echo "<xsl:choose><xsl:when test="icon-base64"><xsl:value-of select="normalize-space(icon-base64)"/></xsl:when><xsl:otherwise><xsl:value-of select="$default-icon16"/></xsl:otherwise></xsl:choose>" | base64 -d &gt; ${tmp.dir}/<xsl:apply-templates select="." mode="out.dir"/>default.png</xsl:for-each><xsl:for-each select=".//category">
 	echo "<xsl:choose><xsl:when test="icon-base64"><xsl:value-of select="normalize-space(icon-base64)"/></xsl:when><xsl:otherwise><xsl:value-of select="$default-icon16"/></xsl:otherwise></xsl:choose>" | base64 -d &gt; ${tmp.dir}/icons/default.png </xsl:for-each>
-	${JAVAC} -d ${tmp.dir} -g -classpath "$(subst $(SPACE),:,$(filter %.jar,$^))" -sourcepath ${tmp.dir} src/<xsl:apply-templates select="." mode="out.dir"/>CompileAll__.java
+	${JAVAC} -Xlint -d ${tmp.dir} -g -classpath "$(subst $(SPACE),:,$(filter %.jar,$^))" -sourcepath ${tmp.dir} src/<xsl:apply-templates select="." mode="out.dir"/>CompileAll__.java
 	jar cf $@ -C ${tmp.dir} .
 	rm -rf ${tmp.dir}
 	
@@ -578,6 +583,7 @@ import org.knime.core.node.defaultnodesettings.DefaultNodeSettingsPane;
 public class <xsl:apply-templates select="." mode="name"/>NodeDialog
 	extends DefaultNodeSettingsPane
 	{
+	@SuppressWarnings("unchecked")
     public <xsl:apply-templates select="." mode="name"/>NodeDialog()
     	{
     	<xsl:apply-templates select="property" mode="dialog"/>
@@ -1502,7 +1508,7 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 <xsl:choose>
  <xsl:when test="@port"><xsl:value-of select="@port"/></xsl:when>
  <xsl:when test="count(../inPort)=1"><xsl:value-of select="../inPort/@name"/></xsl:when>
- <xsl:otherwise><xsl:message terminate="yes">Boum</xsl:message></xsl:otherwise>
+ <xsl:otherwise><xsl:message terminate="yes">Boum property/port-name</xsl:message></xsl:otherwise>
 </xsl:choose>
 </xsl:template>
 
