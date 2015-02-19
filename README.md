@@ -145,3 +145,21 @@ DOID:4377	egg allergy	http://purl.obolibrary.org/obo/DOID_3044	A food allergy th
 DOID:4378	peanut allergic reaction	http://purl.obolibrary.org/obo/DOID_3044	A food allergy that is an allergy or hypersensitivity to dietary substances from peanuts causing an overreaction of the immune system which in a small percentage of people may lead to severe physical symptoms.
 (...)
 ```
+
+Generation of new java KNIME nodes
+
+see https://github.com/lindenb/xslt-sandbox/wiki/Knime2java
+
+
+## Contribute
+
+- Issue Tracker: http://github.com/lindenb/xslt-sandbox/issues`
+- Source Code: http://github.com/lindenb/xslt-sandbox
+
+## License
+
+The project is licensed under the MIT license.
+
+
+
+

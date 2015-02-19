@@ -50,7 +50,7 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 </xsl:document>
 
 <xsl:document href="{$base.dir}/Makefile" method="text"># I hate ant
-.PHONY=all clean install
+.PHONY=all clean install doc
 SHELL=/bin/bash
 tmp.dir=tmp
 extra.source.dir=<xsl:value-of select="$extra.source.dir"/>
@@ -98,7 +98,10 @@ dist/<xsl:value-of select="$jar.name"/>.jar : ${knime.jars} $(subst :, ,${extra.
 	${JAVAC} -Xlint -d ${tmp.dir} -g -classpath "$(subst $(SPACE),:,$(filter %.jar,$^))" -sourcepath ${tmp.dir} src/<xsl:apply-templates select="." mode="out.dir"/>CompileAll__.java
 	jar cf $@ -C ${tmp.dir} .
 	rm -rf ${tmp.dir}
-	
+
+doc: ${knime.jars} $(subst :, ,${extra.jars})
+	mkdir -p javadoc
+	javadoc -d javadoc -classpath "$(subst $(SPACE),:,$(filter %.jar,$^))" -sourcepath src -subpackages <xsl:apply-templates select="." mode="package"/>
 	
 	
 clean:
@@ -111,6 +114,9 @@ clean:
 <xsl:value-of select="$mit.license"/>
 **/
 package <xsl:apply-templates select="." mode="package"/>;
+/**
+ * I'm lazy: this class is just used to provide a cental point of compilation for javac
+ */
 class CompileAll__
 	{
 	<xsl:for-each select="category//node">
@@ -151,8 +157,16 @@ import org.knime.core.node.defaultnodesettings.SettingsModelColumnName;
  */
 
 @javax.annotation.Generated("xslt-sandbox/knime2java")
-public abstract class AbstractNodeModel
-	extends org.knime.core.node.NodeModel
+public abstract class AbstractNodeModel extends
+	<xsl:choose>
+	  <xsl:when test="string-length(@extends-model)&gt;0">
+	  <xsl:value-of select="@extends-model"/>
+	  </xsl:when>
+	 <xsl:otherwise>
+	 org.knime.core.node.NodeModel
+	 </xsl:otherwise>
+	</xsl:choose>
+	 
 	{
 	private final static String UNIQ_ID_FILE="nodeid.txt";
 	/** uniq ID for this node */
@@ -172,6 +186,7 @@ public abstract class AbstractNodeModel
 		super(inPortTypes, outPortTypes);
 		}
 
+	/** return the date when this class was generated */
 	public final String getCompilationDate()
 		{
 		return "<xsl:value-of select="date:date-time()"/>";
@@ -186,8 +201,11 @@ public abstract class AbstractNodeModel
     		}
     	return tspecs;
     	}
-    	
     
+    /** returns summary of the NodeSettings as a string */
+    protected abstract String getSettingsModelSummary();
+    
+    /* @inheritDoc */
     @Override	
     protected abstract DataTableSpec[] configure(DataTableSpec[] inSpecs) throws org.knime.core.node.InvalidSettingsException;
 	
@@ -208,6 +226,7 @@ public abstract class AbstractNodeModel
     	return list;
     	}
 	
+	/* @inheritDoc */
 	@Override
 	protected void loadInternals(File dir, ExecutionMonitor executionMonitor)
 			throws IOException, CanceledExecutionException
@@ -230,6 +249,7 @@ public abstract class AbstractNodeModel
 
 		}
 	
+	/* @inheritDoc */
 	@Override
 	protected void loadValidatedSettingsFrom(NodeSettingsRO settings)
 			throws InvalidSettingsException
@@ -239,24 +259,32 @@ public abstract class AbstractNodeModel
     		param.loadSettingsFrom(settings);
 		}
 	
+	/* @inheritDoc */
 	@Override
 	protected void reset()
 		{
 		getLogger().info("reset "+getClass().getName());
 		}
+	
+	/* @inheritDoc */
 	@Override
 	protected void saveInternals(File dir, ExecutionMonitor executionMonitor)
 			throws IOException, CanceledExecutionException
 		{
 		getLogger().info("saveInternals "+getClass().getName()+" to "+dir);
-		/* save node uniq id */
-		FileWriter w=new FileWriter(new File(dir,UNIQ_ID_FILE));
-		w.write(getNodeUniqId());;
-		w.flush();
-		w.close();
+		
+		if( hasNodeUniqId() )
+			{
+			/* save node uniq id */
+			FileWriter w=new FileWriter(new File(dir,UNIQ_ID_FILE));
+			w.write(getNodeUniqId());;
+			w.flush();
+			w.close();
+			}
 		}
 	
-	/* Adds to the given NodeSettings the model specific settings. The settings don't need to be complete or consistent.
+	/*  @inheritDoc 
+		Adds to the given NodeSettings the model specific settings. The settings don't need to be complete or consistent.
 		If, right after startup, no valid settings are available this method can write either nothing or invalid settings.
 		*/
 	@Override
@@ -265,6 +293,8 @@ public abstract class AbstractNodeModel
 		for(SettingsModel sm:getSettingsModel())
 			sm.saveSettingsTo(settings);
 		}
+		
+	/* @inheritDoc */
 	@Override
 	protected void validateSettings(NodeSettingsRO settings)
 			throws InvalidSettingsException {
@@ -307,6 +337,12 @@ public abstract class AbstractNodeModel
 				);
 			}
 		return this.nodeUniqId;
+		}
+	
+	/** return wether the node ID for this node has been defined */
+	protected synchronized boolean hasNodeUniqId()
+		{
+		return nodeUniqId!=null;
 		}
 	
 	/** return a name describing this type of node */
@@ -437,7 +473,7 @@ public abstract class AbstractNodeModel
     <name><xsl:apply-templates select="." mode="label"/></name>
     <shortDescription><xsl:apply-templates select="."  mode="short.desc"/></shortDescription>    
     <fullDescription>
-        <intro><xsl:apply-templates select="." mode="description"/>
+        <intro><xsl:apply-templates select="description" mode="html"/>
         
         
         <xsl:if test="code/body">
@@ -451,9 +487,7 @@ public abstract class AbstractNodeModel
 		<xsl:apply-templates select="property" mode="nodeFactory.xml"/>
         
         </intro>
-		
-		
-		
+
 		
     </fullDescription>
     
@@ -474,7 +508,15 @@ package <xsl:apply-templates select="." mode="package"/>;
 import org.eclipse.core.runtime.Plugin;
 import org.osgi.framework.BundleContext;
 
-public class  <xsl:apply-templates select="." mode="name"/>NodePlugin extends Plugin {
+public class  <xsl:apply-templates select="." mode="name"/>NodePlugin extends  <xsl:choose>
+	<xsl:when test="string-length(@extends-plugin)&gt;0">
+		<xsl:value-of select="@extends-plugin"/>
+	</xsl:when>
+		<xsl:otherwise>
+		 	Plugin
+		</xsl:otherwise>
+	</xsl:choose>
+	{
     // The shared instance.
     private static  <xsl:apply-templates select="." mode="name"/>NodePlugin plugin;
 
@@ -484,12 +526,12 @@ public class  <xsl:apply-templates select="." mode="name"/>NodePlugin extends Pl
     public  <xsl:apply-templates select="." mode="name"/>NodePlugin() {
         super();
         plugin = this;
-        System.err.println("[LOG]"+getClass()+" constructor");
     }
 
     /**
      * This method is called upon plug-in activation.
      * 
+     * @inheritDoc
      * @param context The OSGI bundle context
      * @throws Exception If this plugin could not be started
      */
@@ -502,6 +544,7 @@ public class  <xsl:apply-templates select="." mode="name"/>NodePlugin extends Pl
     /**
      * This method is called when the plug-in is stopped.
      * 
+     * @inheritDoc
      * @param context The OSGI bundle context
      * @throws Exception If this plugin could not be stopped
      */
@@ -514,10 +557,10 @@ public class  <xsl:apply-templates select="." mode="name"/>NodePlugin extends Pl
     /**
      * Returns the shared instance.
      * 
+     * @inheritDoc
      * @return Singleton instance of the Plugin
      */
     public static  <xsl:apply-templates select="." mode="name"/>NodePlugin getDefault() {
-    	System.err.println("[LOG] <xsl:apply-templates select="." mode="name"/>NodePlugin.getDefault invoked");
         return plugin;
     }
 
@@ -538,37 +581,47 @@ import org.knime.core.data.DataTableSpec;
 
 @javax.annotation.Generated("xslt-sandbox/knime2java")
 public class <xsl:apply-templates select="." mode="name"/>NodeFactory
-        extends NodeFactory&lt;<xsl:apply-templates select="." mode="name"/>NodeModel&gt; {
-	
+        extends <xsl:choose>
+	<xsl:when test="string-length(@extends-factory)&gt;0">
+		<xsl:value-of select="@extends-factory"/>
+	</xsl:when>
+		<xsl:otherwise>
+		 	NodeFactory&lt;<xsl:apply-templates select="." mode="name"/>NodeModel&gt; 
+		</xsl:otherwise>
+	</xsl:choose>
+    {
 	/** constructor */
 	public <xsl:apply-templates select="." mode="name"/>NodeFactory()
 		{
 		System.err.println("[LOG]"+getClass()+" constructor");
 		}
 	
-	
-	
+	/* @inheritDoc */
     @Override
     public <xsl:apply-templates select="." mode="name"/>NodeModel createNodeModel() {
         return new <xsl:apply-templates select="." mode="name"/>NodeModel();
     }
 	
+	/* @inheritDoc */
     @Override
     public int getNrNodeViews() {
         return 0;
     }
 	
+	/* @inheritDoc */
     @Override
     public NodeView&lt;<xsl:apply-templates select="." mode="name"/>NodeModel&gt; createNodeView(final int viewIndex,
             final <xsl:apply-templates select="." mode="name"/>NodeModel nodeModel) {
         throw new IllegalStateException();
     }
 	
+	/* @inheritDoc */
     @Override
     public boolean hasDialog() {
         return true;
     }
 
+	/* @inheritDoc */
     @Override
     public NodeDialogPane createNodeDialogPane() {
         return new <xsl:apply-templates select="." mode="name"/>NodeDialog();
@@ -630,6 +683,8 @@ extends <xsl:choose>
 	{
 	<xsl:apply-templates select="property" />
 	
+	
+	/** constructor */
 	protected Abstract<xsl:apply-templates select="." mode="name"/>NodeModel()
 		{
 		/* super(inport,outport) */
@@ -643,7 +698,20 @@ extends <xsl:choose>
 		return <xsl:apply-templates select="." mode="name"/>NodeModel.class.cast(this);
 		}
 	
+	/** returns Settings Summary as a String
+	 	@inheritDoc */
+	@Override
+	protected String getSettingsModelSummary()
+		{
+		StringBuilder b=new StringBuilder();
+		<xsl:for-each select="property" >
+		<xsl:if test="position()&gt;1">b.append(" ");</xsl:if>
+		b.append("<xsl:value-of select="@name"/>").append("=").append(String.valueOf(<xsl:apply-templates select="." mode="getter.value"/>()));
+		</xsl:for-each>
+		return b.toString();
+		}
 	
+	/* @inheritDoc */
 	@Override 
 	protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException
 		{
@@ -659,7 +727,7 @@ extends <xsl:choose>
     	}
 
 	
-	
+	/* @inheritDoc */
 	@Override
     protected DataTableSpec createOutDataTableSpec(int index)
     	{
@@ -740,7 +808,7 @@ extends <xsl:choose>
 		}	
 	</xsl:for-each>
 	
-
+	/* @inheritDoc */
 	@Override
     protected java.util.List&lt;SettingsModel&gt; fillSettingsModel(java.util.List&lt;SettingsModel&gt; list) {
     	list = super.fillSettingsModel(list);
@@ -756,8 +824,8 @@ extends <xsl:choose>
 </xsl:document>
 
 
-
-
+<xsl:choose>
+<xsl:when test="not(@generate-model='false')">
 <xsl:document href="{$outdir}/{$node.name}NodeModel.java" method="text">/*
 <xsl:value-of select="$mit.license"/>
 */
@@ -770,6 +838,11 @@ import org.knime.core.data.def.*;
 <xsl:apply-templates select="code/import"/>
 /** END user imports */
 
+
+/**
+ * <xsl:apply-templates select="." mode="name"/>NodeModel
+ * @author Pierre Lindenbaum
+ */
 @javax.annotation.Generated("xslt-sandbox/knime2java")
 public class <xsl:apply-templates select="." mode="name"/>NodeModel
 	extends Abstract<xsl:apply-templates select="." mode="name"/>NodeModel
@@ -789,7 +862,7 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 	
 
 	
-	
+	/* @inheritDoc */
 	@Override
     protected BufferedDataTable[] execute(
     		final BufferedDataTable[] inData,
@@ -852,7 +925,12 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 	</xsl:choose>
 	}
 </xsl:document>
+</xsl:when>
+<xsl:otherwise>
+<xsl:message terminate="no">No <xsl:apply-templates select="." mode="name"/>Model.java will be generated.</xsl:message>
+</xsl:otherwise>
 
+</xsl:choose>
 
 
 </xsl:template>
@@ -1064,17 +1142,9 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 
 
 
-
-<xsl:template match="property" mode="todo2">
-
-static final <xsl:apply-templates select="."/> <xsl:apply-templates select="." mode="default.name.decl"/>=<xsl:apply-templates select="." mode="default.name.value"/>;
-static final String DEFAULT_FILENAME_PROPERTY="out.bed";
-
-</xsl:template>
-
 <xsl:template match="property">
 
-	/** <xsl:apply-templates select="." mode="label"/> */
+	/** <xsl:apply-templates select="." mode="label"/> *************************************************************/
 
 <xsl:choose>
 
@@ -1505,7 +1575,7 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 						}
 					}
 					</xsl:when>
-					<xsl:otherwise><xsl:message terminate="yes">you mist specify DialogComponentColumnNameSelection</xsl:message></xsl:otherwise>
+					<xsl:otherwise><xsl:message terminate="yes">you must specify DialogComponentColumnNameSelection</xsl:message></xsl:otherwise>
 					</xsl:choose>
 					));
 </xsl:when>
@@ -1603,7 +1673,14 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 </xsl:template>
 
 <xsl:template match="property" mode="getter.value">
-<xsl:text>getProperty</xsl:text>
+<xsl:choose>
+	<xsl:when test="@type='bool'">
+		<xsl:text>isProperty</xsl:text>
+	</xsl:when>
+	<xsl:otherwise>
+		<xsl:text>getProperty</xsl:text>
+	</xsl:otherwise>
+</xsl:choose>
 <xsl:call-template name="titleize">
  <xsl:with-param name="s" select="@name"/>
 </xsl:call-template>
@@ -1633,7 +1710,10 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 	<xsl:choose>
 		<xsl:when test="@label"><xsl:value-of select="@label"/></xsl:when>
 		<xsl:when test="label"><xsl:value-of select="label"/></xsl:when>
-		<xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
+		<xsl:otherwise>
+			<xsl:message terminate="no"> No label for &lt;<xsl:value-of select="name(.)"/>/<xsl:value-of select="@name"/>&gt;, using @name</xsl:message>
+			<xsl:value-of select="@name"/>
+		</xsl:otherwise>
 	</xsl:choose>
 </xsl:template>
 
@@ -1641,7 +1721,10 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 	<xsl:choose>
 		<xsl:when test="@description"><xsl:value-of select="@description"/></xsl:when>
 		<xsl:when test="description"><xsl:value-of select="description"/></xsl:when>
-		<xsl:otherwise><xsl:apply-templates select="." mode="label"/></xsl:otherwise>
+		<xsl:otherwise>
+			<xsl:message terminate="no"> No property for &lt;<xsl:value-of select="name(.)"/>/<xsl:value-of select="@name"/>&gt;, using label</xsl:message>
+			<xsl:apply-templates select="." mode="label"/>
+		</xsl:otherwise>
 	</xsl:choose>
 </xsl:template>
 
@@ -1709,6 +1792,7 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 	<xsl:when test="@label"><xsl:value-of select="@label"/></xsl:when>
 	<xsl:when test="label"><xsl:value-of select="label"/></xsl:when>
 	<xsl:otherwise>
+		<xsl:message terminate="no"> No label for &lt;<xsl:value-of select="name(.)"/>/<xsl:value-of select="@name"/>&gt;, using @name</xsl:message>
 		<xsl:value-of select="@name"/>
 	</xsl:otherwise>
 </xsl:choose>
@@ -1720,10 +1804,12 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 	<xsl:when test="@description"><xsl:value-of select="@description"/></xsl:when>
 	<xsl:when test="description"><xsl:value-of select="description"/></xsl:when>
 	<xsl:otherwise>
+		<xsl:message terminate="no"> No description for &lt;<xsl:value-of select="name(.)"/>/<xsl:value-of select="@name"/>&gt;, using label</xsl:message>
 		<xsl:apply-templates select="." mode="label"/>
 	</xsl:otherwise>
 </xsl:choose>
 </xsl:template>
+
 <!-- ========================================================================================= -->
 <!-- ========================================================================================= -->
 <!-- ========================================================================================= -->
@@ -1787,5 +1873,19 @@ static final String DEFAULT_FILENAME_PROPERTY="out.bed";
 <xsl:template match="body">
 <xsl:apply-templates select="*|text()"/>
 </xsl:template>
+
+<xsl:template match="description" mode="html">
+<xsl:apply-templates select="*" mode="html"/>
+</xsl:template>
+
+
+<xsl:template match="a|b|i|p|ul|ol|li|a|tt|h3|h4|h|pre|sub|br|table|th|td|tr|@*|text()" mode="html">
+  <xsl:copy>
+    <xsl:apply-templates select="@*" mode="html"/>
+    <xsl:apply-templates select="*|text()" mode="html"/>
+  </xsl:copy>
+</xsl:template>
+
+
 
 </xsl:stylesheet>
