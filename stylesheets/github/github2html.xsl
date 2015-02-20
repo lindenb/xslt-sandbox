@@ -216,6 +216,14 @@ Example:  curl -s "https://github.com/lindenb/jvarkit/wiki/SamJS" | xsltproc -\-
 </a>
 </xsl:template>
 
+
+<xsl:template match="img[@src]">
+<img>
+<xsl:attribute name="src"><xsl:value-of select="@src"/></xsl:attribute>
+<xsl:attribute name="alt"><xsl:value-of select="@alt"/></xsl:attribute>
+</img>
+</xsl:template>
+
 <xsl:template match="pre|code|kbd|samp">
 <xsl:element name="{local-name(.)}">
 <xsl:attribute name="style">
