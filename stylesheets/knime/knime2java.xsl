@@ -1575,7 +1575,11 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 						}
 					}
 					</xsl:when>
-					<xsl:otherwise><xsl:message terminate="yes">you must specify DialogComponentColumnNameSelection</xsl:message></xsl:otherwise>
+					<xsl:otherwise><xsl:message terminate="yes">
+						For column <xsl:value-of select="@name"/> @data-type=<xsl:value-of select="@data-type"/> port=<xsl:value-of select="$port"/>
+						You must specify DialogComponentColumnNameSelection
+					
+						</xsl:message></xsl:otherwise>
 					</xsl:choose>
 					));
 </xsl:when>
