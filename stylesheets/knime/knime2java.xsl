@@ -721,7 +721,14 @@ extends <xsl:choose>
 			}
     	DataTableSpec datatablespecs[] = new DataTableSpec[<xsl:value-of select="count(outPort)"/>];
     	<xsl:for-each select="outPort">
-    	datatablespecs[<xsl:value-of select="position() -1 "/>] = configureOutDataTableSpec(<xsl:value-of select="position() -1 "/>,inSpecs);
+    	datatablespecs[<xsl:value-of select="position() -1 "/>] = <xsl:choose>
+    		<xsl:when test="@columns-at-runtime='true'">
+    			<xsl:text>null; /* columns are defined at runtime */</xsl:text>
+    		</xsl:when>
+    		<xsl:otherwise>
+    		configureOutDataTableSpec(<xsl:value-of select="position() -1 "/>,inSpecs);
+    		</xsl:otherwise>
+    		</xsl:choose>
     	</xsl:for-each>
     	return datatablespecs;
     	}
@@ -752,6 +759,7 @@ extends <xsl:choose>
 	<xsl:for-each select="outPort">
 	
 	
+	<xsl:if test='not(@columns-at-runtime="true")'>
 	
 	protected DataCell[] createDataCellsForOutTableSpec<xsl:value-of select="position() -1 "/>(
 		<xsl:for-each select="column">
@@ -785,15 +793,24 @@ extends <xsl:choose>
 		</xsl:for-each>
 		return __cells;
 		}
+	</xsl:if>
 	
 	/** create DataTableSpec for outport '<xsl:value-of select="position() -1 "/>' <xsl:apply-templates select="." mode="label"/> */
 	protected DataTableSpec createOutTableSpec<xsl:value-of select="position() -1 "/>()
 		{
+		<xsl:choose>
+		<xsl:when test='@columns-at-runtime="true"'>
+		throw new IllegalStateException("Should not be invoked. Columns are known at runtime");
+		</xsl:when>
+		<xsl:otherwise>
 		DataColumnSpec colspecs[]=new DataColumnSpec[ <xsl:value-of select="count(column)"/> ];
 		<xsl:for-each select="column">
 		colspecs[ <xsl:value-of select="position() -1 "/> ] = <xsl:apply-templates select="." mode="create.data.column.spec"/>;
 		</xsl:for-each>
     	return new DataTableSpec(colspecs);
+		
+		</xsl:otherwise>
+		</xsl:choose>
 		}
 	
 	/** create DataTableSpec for outport '<xsl:value-of select="position() -1 "/>' <xsl:apply-templates select="." mode="label"/> for known DataTableSpec */
