@@ -146,10 +146,15 @@ DOID:4378	peanut allergic reaction	http://purl.obolibrary.org/obo/DOID_3044	A fo
 (...)
 ```
 
-Generation of new java KNIME nodes
+### Generation of new java __KNIME__ nodes
 
 see https://github.com/lindenb/xslt-sandbox/wiki/Knime2java
 
+### Draw a [Manhattan plot](https://en.wikipedia.org/wiki/Manhattan_plot) in SVG
+
+see https://github.com/lindenb/xslt-sandbox/wiki/ManhattanPlot
+
+![Plot](http://i.imgur.com/HrGjouY.jpg)
 
 ## Contribute
 
@@ -160,6 +165,9 @@ see https://github.com/lindenb/xslt-sandbox/wiki/Knime2java
 
 The project is licensed under the MIT license.
 
+## Author
+
+Pierre Lindenbaum PhD @yokofakun
 
 
 
