@@ -264,7 +264,17 @@ public abstract class AbstractNodeModel extends
 	protected void reset()
 		{
 		getLogger().info("reset "+getClass().getName());
+		this.removeTmpNodeFiles();
 		}
+	
+	/* @inheritDoc */
+	@Override
+	protected void 	onDispose()
+		{
+		getLogger().info("dispose "+getClass().getName());
+		this.removeTmpNodeFiles();
+		}
+	
 	
 	/* @inheritDoc */
 	@Override
@@ -427,8 +437,61 @@ public abstract class AbstractNodeModel extends
 		return findColumnIndex(dataTableSpec,colName.getColumnName(),dataType);
 		}
 
+	/** get variable name defining path to data nodes. Default no variable defined  */
+	protected String getPluginBaseDirectoryVariable()
+		{
+		return null;
+		}
 	
+	/** get root directory where we should store data for nodes */
+	protected File getPluginBaseDirectory()
+		{
+		String variableName = getPluginBaseDirectoryVariable();
+		if(variableName == null) return null;/* no base dir defined */
+		String s= peekFlowVariableString(variableName);
+		if(s==null) throw new IllegalStateException(
+				"Flow Variable "+variableName+" undefined. "+
+				"Add this variable in the KNIME workspace (right click in the workspace icon) and set its value to an existing directory."
+				);
+		File dir=new File(s);
+		if(!dir.exists())
+			{
+			throw new IllegalStateException(variableName+" defined as  "+s+" but doesn't exists");
+			}
+		if(!dir.isDirectory())
+			{
+			throw new IllegalStateException(variableName+" defined as  "+s+" but it's not a directory");
+			}
+		return dir;
+		}
 	
+	/** get this Node working directory. Return null if no plugin directory defined */
+	protected File getNodeWorkingDirectory()
+		{
+		File parent= getPluginBaseDirectory();
+		if(parent==null) return null;
+		File me = new File(parent, getNodeUniqId()+"."+getNodeName());
+		return me;
+		}
+
+	/* remove tmp files in getNodeWorkingDirectory */
+	protected void removeTmpNodeFiles()
+		{
+		if( !hasNodeUniqId() ) return;
+		File dir = this.getNodeWorkingDirectory();
+		if(dir==null || !dir.exists()) return;
+		getLogger().warn("Cleaning up "+dir);
+		for(File f : dir.listFiles())
+			{
+			removeTmpNodeFile(f);
+			}
+		}
+	/* remove tmp file in getNodeWorkingDirectory */
+	protected void removeTmpNodeFile(File f)
+		{
+		getLogger().warn("Remove "+f);
+		f.delete();
+		}
 	}
 
 </xsl:document>
@@ -674,6 +737,9 @@ public abstract class Abstract<xsl:apply-templates select="." mode="name"/>NodeM
 extends <xsl:choose>
 	<xsl:when test="string-length(@extends-model)&gt;0">
 		<xsl:value-of select="@extends-model"/>
+	</xsl:when>
+	<xsl:when test="string-length(/plugin/@abstract-node-extends-model)&gt;0">
+		<xsl:value-of select="/plugin/@abstract-node-extends-model"/>
 	</xsl:when>
 	<xsl:otherwise>
 	 <xsl:apply-templates select="/plugin" mode="package"/>
@@ -1639,7 +1705,19 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="config.name"/>,
 						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="default.name"/>
 						),
-					"<xsl:apply-templates select="." mode="label"/>",false,80,25
+					"<xsl:apply-templates select="." mode="label"/>"
+					<xsl:if test="(@rows and @cols ) or @multiline">
+						<xsl:text>,</xsl:text>
+						<xsl:choose>
+							<xsl:when test="@empty-string='false'">true</xsl:when>
+							<xsl:otherwise>false</xsl:otherwise>
+						</xsl:choose>/* disallowEmptyString - if set true, the component request a non-empty string from the user. */
+						<xsl:choose>
+							<xsl:when test="@rows and @cols">,<xsl:value-of select="@rows"/> /* cols */,<xsl:value-of select="@cols"/> /* rows */</xsl:when>
+							<xsl:when test="@multiline='true'">,80 /* cols */,25 /* rows */</xsl:when>
+							<xsl:otherwise></xsl:otherwise>
+						</xsl:choose>
+					</xsl:if>
 					));
 </xsl:when>
 
