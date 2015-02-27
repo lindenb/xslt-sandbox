@@ -272,7 +272,7 @@ public abstract class AbstractNodeModel extends
 	protected void 	onDispose()
 		{
 		getLogger().info("dispose "+getClass().getName());
-		this.removeTmpNodeFiles();
+		//this.removeTmpNodeFiles();
 		}
 	
 	
