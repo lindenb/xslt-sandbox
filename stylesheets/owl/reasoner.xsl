@@ -16,12 +16,14 @@ Author:
         http://plindenbaum.blogspot.com
 Motivation:
      print all parent for any children (ontology normalization)
+     see https://github.com/lindenb/xslt-sandbox/wiki/ReasoningWithSequenceOntology
 
 	
 -->
 
 <xsl:output method="xml" indent="yes"/>
 <xsl:param name="rootid"></xsl:param>
+<xsl:key name="uri2class" match="/rdf:RDF/owl:Class" use="@rdf:about"/>
 
 <xsl:template match="/">
 <rdf:RDF>
@@ -60,7 +62,7 @@ Motivation:
 <xsl:if test="@rdf:about != $rootid">
 <xsl:for-each select="rdfs:subClassOf">
 <xsl:variable name="parentid" select="@rdf:resource"/>
-<xsl:apply-templates select="/rdf:RDF/owl:Class[@rdf:about=$parentid]" mode="printparents"/>
+<xsl:apply-templates select="key('uri2class',$parentid)" mode="printparents"/>
 </xsl:for-each>
 </xsl:if>
 </xsl:template>

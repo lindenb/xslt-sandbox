@@ -406,6 +406,69 @@ public abstract class AbstractNodeModel extends
 		}
 	
 	
+	/** create File for writing in this node directory */
+	protected File createFileForWriting(
+			String base,
+			String extension
+			)
+		{
+		String rememberOriginal=null;
+		File baseFile=null;
+		try
+			{
+			baseFile=new File(base);
+			}
+		catch(Exception err)
+			{
+			baseFile=null;
+			}
+		
+		if(baseFile!=null)
+			{
+			rememberOriginal=baseFile.getName();
+			int dot = rememberOriginal.indexOf('.');
+			//start look likes a md5 sum.
+			if(dot==32 &amp;&amp; rememberOriginal.substring(0,32).matches("[a-z0-9]+"))
+				{
+				rememberOriginal = rememberOriginal.substring(33);
+				}
+			String common_extensions[]=new String[]{
+				".",".text",".txt",".gz",".tsv",".gz",".zip",".bam",".vcf",".data",
+				".sam",".fastq",".fa",".fasta",".xls",".tmp",".bcf"
+				};
+			boolean done=false;
+			while(!done)
+				{
+				done=true;
+				for(String x: common_extensions)
+					{
+					if(rememberOriginal.toLowerCase().endsWith(x))
+						{
+						done=false;
+						rememberOriginal=
+								rememberOriginal.substring(0,
+								rememberOriginal.length()-x.length()
+							);
+						}
+					}
+				}
+			if(rememberOriginal.isEmpty()) rememberOriginal=null;
+			}
+		if(extension!=null &amp;&amp; !extension.startsWith("."))
+			{
+			extension="."+extension;
+			}
+		java.io.File fileout = new java.io.File(
+	    		this.getNodeWorkingDirectory(),
+	    		md5(base)+
+	    		(rememberOriginal==null?"":"."+rememberOriginal)+
+	    		(extension==null?"":extension)
+	    		);
+		return fileout;
+		}
+
+	
+	
 	/** throws an InvalidSettingsException if column was not found */
     public int findColumnIndex(DataTableSpec dataTableSpec,String name)
 		throws InvalidSettingsException
