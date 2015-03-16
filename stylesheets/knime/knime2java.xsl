@@ -166,13 +166,14 @@ public abstract class AbstractNodeModel extends
 	 org.knime.core.node.NodeModel
 	 </xsl:otherwise>
 	</xsl:choose>
-	 
+	implements org.knime.core.node.BufferedDataTableHolder
 	{
 	private final static String UNIQ_ID_FILE="nodeid.txt";
 	/** uniq ID for this node */
 	private String nodeUniqId=null;
 
-
+	/** implementation of BufferedDataTableHolder */
+	private org.knime.core.node.BufferedDataTable[] _internalTables = new org.knime.core.node.BufferedDataTable[0];
 
 	
 	protected AbstractNodeModel(int inport,int outport)
@@ -190,6 +191,21 @@ public abstract class AbstractNodeModel extends
 	public final String getCompilationDate()
 		{
 		return "<xsl:value-of select="date:date-time()"/>";
+		}
+	
+	@Override
+	public org.knime.core.node.BufferedDataTable[] 	getInternalTables()
+		{
+		if(this._internalTables==null)
+			this._internalTables = new org.knime.core.node.BufferedDataTable[0];
+		return this._internalTables;
+		}
+
+	/* Allows the WorkflowManager to set information about new BDTs, for instance after load. */
+	@Override
+	public void setInternalTables(org.knime.core.node.BufferedDataTable[] tables)
+		{
+		this._internalTables = tables;
 		}
 	
 	protected DataTableSpec[] createOutTableSpec()
