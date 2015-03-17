@@ -147,9 +147,11 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.defaultnodesettings.SettingsModel;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortType;
+import org.knime.core.node.BufferedDataTableHolder;
 import org.knime.core.util.FileUtil;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
+import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.defaultnodesettings.SettingsModelColumnName;
 
 /**
@@ -166,12 +168,13 @@ public abstract class AbstractNodeModel extends
 	 org.knime.core.node.NodeModel
 	 </xsl:otherwise>
 	</xsl:choose>
-	 
+	implements BufferedDataTableHolder
 	{
 	private final static String UNIQ_ID_FILE="nodeid.txt";
 	/** uniq ID for this node */
 	private String nodeUniqId=null;
-
+	/** implementation of BufferedDataTableHolder */
+	private BufferedDataTable m_dataHolder[]=null;
 
 
 	
@@ -185,6 +188,29 @@ public abstract class AbstractNodeModel extends
 		{
 		super(inPortTypes, outPortTypes);
 		}
+
+	/** array of BDTs which are held and used internally. */
+	@Override
+	public BufferedDataTable[] getInternalTables()
+		{
+		if(m_dataHolder==null) m_dataHolder=new BufferedDataTable[0];
+		return m_dataHolder;
+		}
+	
+	/** Allows the WorkflowManager to set information about new BDTs, for instance after load. */
+	public void setInternalTables(BufferedDataTable[] tables)
+		{
+		this.m_dataHolder = tables;
+		};
+
+	
+	protected BufferedDataTable[] internalTables(BufferedDataTable[] tables)
+		{
+		setInternalTables(tables);
+		return tables;
+		}
+	
+	
 
 	/** return the date when this class was generated */
 	public final String getCompilationDate()
@@ -265,6 +291,7 @@ public abstract class AbstractNodeModel extends
 		{
 		getLogger().info("reset "+getClass().getName());
 		this.removeTmpNodeFiles();
+		this.setInternalTables(null);
 		}
 	
 	/* @inheritDoc */
@@ -273,6 +300,7 @@ public abstract class AbstractNodeModel extends
 		{
 		getLogger().info("dispose "+getClass().getName());
 		//this.removeTmpNodeFiles();
+		this.setInternalTables(null);
 		}
 	
 	
@@ -731,15 +759,22 @@ public class <xsl:apply-templates select="." mode="name"/>NodeFactory
 	/* @inheritDoc */
     @Override
     public int getNrNodeViews() {
-        return 0;
+        return <xsl:value-of select="count(view)"/>;
     }
 	
 	/* @inheritDoc */
     @Override
     public NodeView&lt;<xsl:apply-templates select="." mode="name"/>NodeModel&gt; createNodeView(final int viewIndex,
-            final <xsl:apply-templates select="." mode="name"/>NodeModel nodeModel) {
-        throw new IllegalStateException();
-    }
+            final <xsl:apply-templates select="." mode="name"/>NodeModel nodeModel)
+        {
+        switch(viewIndex)
+        	{
+        	<xsl:for-each select="view">
+        	case <xsl:value-of select=" position() - 1"/> : return new <xsl:value-of select="@class"/>(nodeModel);
+        	</xsl:for-each>
+        	default:throw new IllegalStateException();
+        	}
+    	}
 	
 	/* @inheritDoc */
     @Override
@@ -1453,7 +1488,7 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 	
 </xsl:when>
 
-<xsl:when test="@type='file-read' or @type='file-save'">
+<xsl:when test="@type='file-read' or @type='file-save' or @type='directory-read'">
 <xsl:variable name="titlename">
 <xsl:call-template name="titleize">
 	<xsl:with-param name="s" select="@name"/>
@@ -1483,6 +1518,17 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 		}
 
 	<xsl:choose>
+		<xsl:when test="@type='directory-read'">
+		
+		protected java.io.File get<xsl:value-of select="$titlename"/>Directory() throws java.io.IOException
+			{
+			String dir = <xsl:apply-templates select="." mode="getter.value"/>();
+			return dir==null?null:new java.io.File(dir);
+			}
+		
+		</xsl:when>
+	
+	
 		<xsl:when test="@type='file-read'">
 		
 		protected java.io.BufferedReader open<xsl:value-of select="$titlename"/>ForBufferedReader() throws java.io.IOException
@@ -1730,7 +1776,8 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 					));
 </xsl:when>
 
-<xsl:when test="@type='file-read'">
+
+<xsl:when test="@type='file-read' or @type='directory-read'">
 <xsl:variable name="port" select="@port"/>
 <xsl:variable name="chooser" select="concat('chooser_read_',generate-id())"/>
 		
@@ -1740,10 +1787,20 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 						<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="default.name"/>
 						),
 					"<xsl:value-of select="generate-id(.)"/>",/* historyID */
+		<xsl:choose>
+		<xsl:when test="@type='directory-read'">
+					javax.swing.JFileChooser.OPEN_DIALOG,
+					true /* directory only */
+					);
+		</xsl:when>
+		<xsl:otherwise>
 					javax.swing.JFileChooser.OPEN_DIALOG
 					<xsl:for-each select="extension">,"<xsl:value-of select="."/>"</xsl:for-each>
 					);
+				
 		<xsl:value-of select="$chooser"/>.setAllowRemoteURLs(true);
+		</xsl:otherwise>
+		</xsl:choose>
 		<xsl:value-of select="$chooser"/>.setBorderTitle("<xsl:apply-templates select="." mode="label"/>");
 		<xsl:value-of select="$chooser"/>.setToolTipText("<xsl:apply-templates select="." mode="description"/>");
 		this.addDialogComponent(<xsl:value-of select="$chooser"/> );
