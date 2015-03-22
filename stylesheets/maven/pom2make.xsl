@@ -43,7 +43,7 @@ ${all.jars} :
 <xsl:text> </xsl:text>
 <xsl:apply-templates select="." mode="jar.path"/>
 
-<xsl:for-each select="pom:dependencies/pom:dependency[not(pom:scope/text() ='test')]">
+<xsl:for-each select="pom:dependencies/pom:dependency[not(pom:scope/text() ='test' or pom:scope/text() ='provided' or pom:optional/text() ='true')]">
 <xsl:apply-templates select="." mode="make"/>
 </xsl:for-each>
 </xsl:template>
