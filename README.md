@@ -156,6 +156,24 @@ see https://github.com/lindenb/xslt-sandbox/wiki/ManhattanPlot
 
 ![Plot](http://i.imgur.com/HrGjouY.jpg)
 
+## Create a Makefile from an apache-maven pom.xml to download the required jars:
+
+```
+$ xsltproc pom2make.xsl "http://central.maven.org/maven2/org/eclipse/jetty/jetty-server/9.3.0.M2/jetty-server-9.3.0.M2.pom"  2> /dev/null 
+```
+
+```make
+lib.dir=lib
+all.jars = $(addprefix ${lib.dir}/,$(sort  org/eclipse/jetty/jetty-server/9.3.0.M2/jetty-server-9.3.0.M2.jar javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar org/eclipse/jetty/jetty-http/9.3.0.M2/jetty-http-9.3.0.M2.jar org/eclipse/jetty/jetty-util/9.3.0.M2/jetty-util-9.3.0.M2.jar javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar org/slf4j/slf4j-api/1.7.10/slf4j-api-1.7.10.jar org/eclipse/jetty/jetty-io/9.3.0.M2/jetty-io-9.3.0.M2.jar org/eclipse/jetty/jetty-util/9.3.0.M2/jetty-util-9.3.0.M2.jar javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar org/slf4j/slf4j-api/1.7.10/slf4j-api-1.7.10.jar org/eclipse/jetty/jetty-jmx/9.3.0.M2/jetty-jmx-9.3.0.M2.jar org/eclipse/jetty/jetty-util/9.3.0.M2/jetty-util-9.3.0.M2.jar javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar org/slf4j/slf4j-api/1.7.10/slf4j-api-1.7.10.jar))
+
+.PHONY:all
+
+all: ${all.jars}
+${all.jars} : 
+	mkdir -p $(dir $@) && curl -o $@ "http://central.maven.org/maven2/$(patsubst ${lib.dir}/%,%,$@)"
+```
+see https://github.com/lindenb/xslt-sandbox/wiki/Maven2Make
+
 ## Contribute
 
 - Issue Tracker: http://github.com/lindenb/xslt-sandbox/issues`
