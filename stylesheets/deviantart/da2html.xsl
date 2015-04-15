@@ -36,17 +36,18 @@
 
 
 <xsl:template match="head">
+
  <xsl:text>Source: </xsl:text>
 <xsl:element name="a">
-<xsl:attribute name="href"><xsl:value-of select="meta[@name='og:url']/@content"/></xsl:attribute>
-<xsl:value-of select="meta[@name='og:title']/@content"/>
+<xsl:attribute name="href"><xsl:value-of select="meta[@property='og:url']/@content"/></xsl:attribute>
+<xsl:value-of select="meta[@property='og:title']/@content"/>
 </xsl:element>
 <xsl:text> by </xsl:text>
 <xsl:element name="a">
 <xsl:attribute name="href">
-	<xsl:value-of select="concat('http://',substring-before(substring-after(meta[@name='og:url']/@content,'http://'),'/'))"/>
+	<xsl:value-of select="concat('http://',substring-before(substring-after(meta[@property='og:url']/@content,'http://'),'/'))"/>
 	</xsl:attribute>
-    <xsl:value-of select="substring-before(substring-after(meta[@name='og:url']/@content,'http://'),'.deviantart.com')"/>
+    <xsl:value-of select="substring-before(substring-after(meta[@property='og:url']/@content,'http://'),'.deviantart.com')"/>
 </xsl:element>
 <xsl:text>. </xsl:text>
 </xsl:template>

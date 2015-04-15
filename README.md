@@ -174,6 +174,13 @@ ${all.jars} :
 ```
 see https://github.com/lindenb/xslt-sandbox/wiki/Maven2Make
 
+
+### Plotting project Tycho data:
+
+see https://github.com/lindenb/xslt-sandbox/wiki/Tycho
+
+![http://i.imgur.com/gBZCVTX.png](http://i.imgur.com/gBZCVTX.png)
+
 ## Contribute
 
 - Issue Tracker: http://github.com/lindenb/xslt-sandbox/issues`
