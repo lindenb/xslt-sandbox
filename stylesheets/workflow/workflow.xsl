@@ -62,17 +62,17 @@ public class Workflow
 	/** Exception */
 	private static class WorkflowException extends Exception
 		{
-		WorkflowException() {}
-		WorkflowException(Throwable t) {super(t);}
-		WorkflowException(String s) {super(s);}
+		public WorkflowException() {}
+		public WorkflowException(Throwable t) {super(t);}
+		public WorkflowException(String s) {super(s);}
 		}
 	
 	private static interface DataType
-		extends Comparator&lt;Object&gt;
 		{
 		public Class&lt;?&gt; getDataClass();
 		public String getName();
 		public DataValue parseString(String s);
+		public Comparator&lt;Object&gt; createComparator();
 		}
 	
 	private static abstract class AbstractDataType
@@ -114,7 +114,21 @@ public class Workflow
 	private static final  DataType stringType = new AbstractDataType(String.class)
 		{
 		@Override
-		public int compare(Object o,Object o1) { return 0;}
+		public Comparator&lt;Object&gt; createComparator()
+			{
+			return new Comparator()
+				{
+				@Override
+				public int compare(Object o1,Object o2)
+					{
+					if(o1==null)
+						{
+						return o2==null?0:-1;
+						}
+					return String.class.cast(o1).compareTo(String.class.cast(o2));
+					}
+				};
+			}
 		@Override
 		public DataValue parseString(String s)
 			{
@@ -125,7 +139,21 @@ public class Workflow
 	private static final  DataType intType = new AbstractDataType(Integer.class)
 		{
 		@Override
-		public int compare(Object o,Object o1) { return 0;}
+		public Comparator&lt;Object&gt; createComparator()
+			{
+			return new Comparator()
+				{
+				@Override
+				public int compare(Object o1,Object o2)
+					{
+					if(o1==null)
+						{
+						return o2==null?0:-1;
+						}
+					return Integer.class.cast(o1).compareTo(Integer.class.cast(o2));
+					}
+				};
+			}
 		@Override
 		public DataValue parse(String s)
 			{
@@ -136,7 +164,21 @@ public class Workflow
 	private static final  DataType doubleType = new AbstractDataType(Double.class)
 		{
 		@Override
-		public int compare(Object o1,Object o2) { return Double.class.cast(o1).compareTo(Double.class.cast(o2);}
+		public Comparator&lt;Object&gt; createComparator()
+			{
+			return new Comparator()
+				{
+				@Override
+				public int compare(Object o1,Object o2)
+					{
+					if(o1==null)
+						{
+						return o2==null?0:-1;
+						}
+					return Double.class.cast(o1).compareTo(Double.class.cast(o2));
+					}
+				};
+			}
 		@Override
 		public DataValue parse(String s)
 			{
@@ -157,7 +199,6 @@ public class Workflow
 		{
 		public DataType getDataType();
 		public Object getValue();
-
 		}
 	
 	private static class DefaultDataValue
@@ -213,7 +254,11 @@ public class Workflow
 			{
 			return getDataType().compare(this.getValue(),dv.getValue());
 			}
-		
+		@Override
+		public String toString()
+			{
+			return String.valueOf(getValue();
+			}
 		}
 	
 	private static interface Column 
@@ -250,7 +295,7 @@ public class Workflow
 		}
 
 	
-	private interface ColumnList extends Iterable&lt;Column&gt;
+	private static interface ColumnList extends Iterable&lt;Column&gt;
 		{
 		public int size();
 		public Column get(int index);
@@ -259,7 +304,7 @@ public class Workflow
 		public Column findColumnByName(String name);
 		}
 	
-	private abstract class AbstractColumnList implements ColumnList
+	private static abstract class AbstractColumnList implements ColumnList
 		{
 		public abstract List&lt;Column&gt; getColumns();
 		@Override
@@ -302,7 +347,7 @@ public class Workflow
 			}
 		}
 		
-	private class DefaultColumnList extends AbstractColumnList
+	private static class DefaultColumnList extends AbstractColumnList
 		{
 		private  List&lt;Column&gt; columns = null;
 		
@@ -322,7 +367,7 @@ public class Workflow
 		}
 	
 	
-	private interface DataRow extends Iterable&lt;DataValue&gt;
+	private static interface DataRow extends Iterable&lt;DataValue&gt;
 		{
 		public ColumnList getColumnList();
 		public DataValue get(int i);
@@ -330,7 +375,7 @@ public class Workflow
 		public void write(XMLEventWriter w) throws XMLStreamException;
 		}
 	
-	private class DefaultRow implements DataRow
+	private static class DefaultRow implements DataRow
 		{
 		private ColumnList columns;
 		private List&lt;DataValue&gt; values = null;
@@ -381,18 +426,9 @@ public class Workflow
 		{
 		}
 
-	public interface NodeModel
-		{
-		}
+
 	
-	public interface InputNodeModel extends NodeModel
-		{
-		public void execute(ExecutionContext context) throws WorkflowException;
-		}
-	
-	public interface OutputNodeModel extends NodeModel
-		{
-		}
+
 	
 	public static abstract class AbstractOutputNodeModel
 		implements OutputNodeModel
@@ -440,50 +476,62 @@ public class Workflow
 				}
 			}
 		}
+		
+	private interface Named
+		{
+		public String getName();
+		public String getLabel();
+		public String getDescription();
+		}
 	
-	abstract class AbstractOutput
-	{
-	class OutputSlot
+	public interface NodeModel extends Named
+		{
+		}
+	
+	public interface InputNodeModel extends NodeModel
+		{
+		public void execute(ExecutionContext context) throws WorkflowException;
+		}
+	
+	public interface OutputNodeModel extends NodeModel
+		{
+		}
+	
+	privat class OutputSlot implements Named
 		{
 		String name;
 		boolean is_default;
 		String getName() { return name;}
 		boolean isDefault() { return is_default;}
-		}
-	
-	abstract List&lt;OutputSlot&gt; getOutputSlots();
-	
-	OutputSlot getOutputSlotByName(String name)
-		{
-		OutputSlot sel = null;
-		for(OutputSlot slot: getOutputSlots())
+		List&lt;InputNodeModel&gt; inputs = new ArrayList&lt;InputNodeModel&gt;();
+		
+		public void fireDataRow(ExecutionContext ctx,final DataRow row)
 			{
-			if(slot.getName().equals(name))
+			for(InputNodeModel n:getInputs())
 				{
-				if( sel == null ) throw new RuntimeException("");
-				sel = slot;
+				n.handleDataRow(ctx,row);
 				}
 			}
-		if( sel == null ) throw new RuntimeException("");
-		return sel;
 		}
-
-	OutputSlot getDefaultOutputSlot() 
+	
+	abstract class AbstractOutputNodeModel
+		implements OutputNodeModel
 		{
-		if(  getOutputSlots().isEmpty() )
+		protected AbstractOutputNodeModel()
 			{
-			throw new RuntimeException("");
 			}
-		else if( getOutputSlots().size() == 1 )
-			{
-			return getOutputSlots().get(0);
-			}
-		else
+		
+		public abstract List&lt;OutputSlot&gt; getOutputSlots();
+	
+	
+
+	
+		public OutputSlot getOutputSlotByName(String name)
 			{
 			OutputSlot sel = null;
 			for(OutputSlot slot: getOutputSlots())
 				{
-				if(slot.isDefault())
+				if(slot.getName().equals(name))
 					{
 					if( sel == null ) throw new RuntimeException("");
 					sel = slot;
@@ -492,15 +540,35 @@ public class Workflow
 			if( sel == null ) throw new RuntimeException("");
 			return sel;
 			}
+
+		public OutputSlot getDefaultOutputSlot() 
+			{
+			if(  getOutputSlots().isEmpty() )
+				{
+				throw new RuntimeException("");
+				}
+			else if( getOutputSlots().size() == 1 )
+				{
+				return getOutputSlots().get(0);
+				}
+			else
+				{
+				OutputSlot sel = null;
+				for(OutputSlot slot: getOutputSlots())
+					{
+					if(slot.isDefault())
+						{
+						if( sel == null ) throw new RuntimeException("");
+						sel = slot;
+						}
+					}
+				if( sel == null ) throw new RuntimeException("");
+				return sel;
+				}
+			}
 		}
-	}
 	
-	private static class Named
-		{
-		String id;
-		String name;
-		String description;
-		}
+
 	
 	private abstract class Pipeline
 		{
