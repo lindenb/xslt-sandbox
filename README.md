@@ -174,6 +174,20 @@ ${all.jars} :
 ```
 see https://github.com/lindenb/xslt-sandbox/wiki/Maven2Make
 
+
+### Plotting project Tycho data:
+
+see https://github.com/lindenb/xslt-sandbox/wiki/Tycho
+
+![http://i.imgur.com/gBZCVTX.png](http://i.imgur.com/gBZCVTX.png)
+
+### Pubmed Trending Articles as a RSS feed.
+
+see https://github.com/lindenb/xslt-sandbox/wiki/PubmedTrending
+
+![http://i.imgur.com/a1VAdCa](http://i.imgur.com/a1VAdCa.jpg)
+
+
 ## Contribute
 
 - Issue Tracker: http://github.com/lindenb/xslt-sandbox/issues`

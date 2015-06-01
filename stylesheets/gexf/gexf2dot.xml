@@ -54,8 +54,29 @@ digraph G {
 <xsl:value-of select="@source"/>
 <xsl:text> -&gt; </xsl:text>
 <xsl:value-of select="@target"/>
+<xsl:apply-templates select="g:attvalues" mode="edge"/>
 <xsl:text> ;
 </xsl:text>
 </xsl:template>
+
+<xsl:template match="g:attvalues" mode="edge">
+<xsl:if test="count(g:attvalue) &gt; 0">
+<xsl:text>[</xsl:text>
+<xsl:for-each select="g:attvalue">
+<xsl:choose>
+	<xsl:when test="@for='weight'">
+		<xsl:text>weight=</xsl:text>
+		<xsl:value-of select="@value"/>
+		<xsl:text>,label=&quot;</xsl:text>
+		<xsl:value-of select="@value"/>
+		<xsl:text>&quot;</xsl:text>
+	</xsl:when>
+</xsl:choose>
+</xsl:for-each>
+<xsl:text>]</xsl:text>
+</xsl:if>
+</xsl:template>
+
+
 
 </xsl:stylesheet>

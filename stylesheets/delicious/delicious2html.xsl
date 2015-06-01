@@ -64,7 +64,7 @@ Motivation:
 </a>
 </xsl:if>
 </xsl:when>
-<xsl:when test="starts-with(@href,'http://www.deviantart.com/art/')">
+<xsl:when test="contains(@href,'.deviantart.com/art/')">
 <xsl:variable name="u2" select="substring-after(@href,'/art/')"/>
 <xsl:if test="string-length($u2) &gt;0">
 <a  target="_blank">
