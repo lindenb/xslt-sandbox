@@ -764,6 +764,7 @@ public class <xsl:apply-templates select="." mode="name"/>NodeFactory
 	
 	/* @inheritDoc */
     @Override
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public NodeView&lt;<xsl:apply-templates select="." mode="name"/>NodeModel&gt; createNodeView(final int viewIndex,
             final <xsl:apply-templates select="." mode="name"/>NodeModel nodeModel)
         {
@@ -1852,12 +1853,14 @@ public class <xsl:apply-templates select="." mode="name"/>NodeModel
 					<xsl:value-of select="$setting"/>,
 					"<xsl:apply-templates select="." mode="label"/>",
 					java.util.Arrays.asList(<xsl:apply-templates select=".." mode="name"/>NodeModel.<xsl:apply-templates select="." mode="enum.name"/>),
+					javax.swing.ListSelectionModel.SINGLE_SELECTION,/* an integer specifying the type of selections that are permissible */
 					<xsl:choose>
 						<xsl:when test="@required='false'">false</xsl:when>
 						<xsl:otherwise>true</xsl:otherwise>
 					</xsl:choose>, /* isRequired */
 					<xsl:choose>
 						<xsl:when test="@visible"><xsl:value-of select="@visible"/></xsl:when>
+						<xsl:when test="count(enum)&lt;10"><xsl:value-of select="count(enum)"/></xsl:when>
 						<xsl:otherwise>10</xsl:otherwise>
 					</xsl:choose> /* visibleRowCount */
 					));
