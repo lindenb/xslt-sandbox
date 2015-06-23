@@ -188,6 +188,14 @@ see https://github.com/lindenb/xslt-sandbox/wiki/PubmedTrending
 ![http://i.imgur.com/a1VAdCa](http://i.imgur.com/a1VAdCa.jpg)
 
 
+### Blast to fasta
+
+see https://www.biostars.org/p/14913/
+
+```
+xsltproc --novalid blast2fasta.xsl blastn.xml
+```
+
 ## Contribute
 
 - Issue Tracker: http://github.com/lindenb/xslt-sandbox/issues`
