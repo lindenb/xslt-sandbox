@@ -26,7 +26,7 @@ Example:
 <xsl:variable name="hitDef" select="Hit_def"/>
 <xsl:variable name="hitLen" select="Hit_len"/>
 <xsl:for-each select="Hit_hsps/Hsp">
-<xsl:text>></xsl:text>
+<xsl:text>&gt;</xsl:text>
 <xsl:value-of select="$hitDef"/>
 <xsl:text>|len:</xsl:text>
 <xsl:choose>
