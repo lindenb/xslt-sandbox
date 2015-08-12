@@ -1,6 +1,7 @@
 <?xml version='1.0'  encoding="UTF-8" ?>
 <xsl:stylesheet
         xmlns:xsl='http://www.w3.org/1999/XSL/Transform'
+        xmlns:d="http://exslt.org/dates-and-times"
         version='1.0'
         >
 <xsl:output method="text" />
@@ -13,7 +14,7 @@
 
 The MIT License (MIT)
 
-Copyright (c) 2015 Pierre Lindenbaum
+Copyright (c) <xsl:value-of select="d:year()"/> Pierre Lindenbaum
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -44,6 +45,8 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import javax.xml.namespace.*; 
+import javax.swing.*;
 
 
 <xsl:apply-templates select="workflow"/>
@@ -55,7 +58,7 @@ import java.util.logging.Logger;
 public class Workflow
 	{
 	/** XMLEventFactory used to serialize data as XML */
-	private static XMLEventFactory xmlEventFactory = XMLEventFactory newInstance();
+	private static XMLEventFactory xmlEventFactory = XMLEventFactory.newInstance();
 	/** Logger */
 	private static final Logger LOG=Logger.getLogger("Workflow");
 
@@ -68,10 +71,12 @@ public class Workflow
 		}
 	
 	private static interface DataType
+		extends Comparator&lt;Object&gt;
 		{
 		public Class&lt;?&gt; getDataClass();
 		public String getName();
 		public DataValue parseString(String s);
+		public int compare(Object o1,Object o2);
 		public Comparator&lt;Object&gt; createComparator();
 		}
 	
@@ -108,26 +113,30 @@ public class Workflow
 			{
 			return getName();
 			}
-		
+		@Override
+		public Comparator&lt;Object&gt; createComparator()
+			{
+			return new Comparator&lt;Object&gt;()
+				{
+				@Override
+				public int compare(Object o1,Object o2)
+					{
+					return AbstractDataType.this.compare(o1,o2);
+					}
+				};
+			}
 		}
 	
 	private static final  DataType stringType = new AbstractDataType(String.class)
 		{
 		@Override
-		public Comparator&lt;Object&gt; createComparator()
+		public int compare(Object o1,Object o2)
 			{
-			return new Comparator()
+			if(o1==null)
 				{
-				@Override
-				public int compare(Object o1,Object o2)
-					{
-					if(o1==null)
-						{
-						return o2==null?0:-1;
-						}
-					return String.class.cast(o1).compareTo(String.class.cast(o2));
-					}
-				};
+				return o2==null?0:-1;
+				}
+			return String.class.cast(o1).compareTo(String.class.cast(o2));
 			}
 		@Override
 		public DataValue parseString(String s)
@@ -139,23 +148,17 @@ public class Workflow
 	private static final  DataType intType = new AbstractDataType(Integer.class)
 		{
 		@Override
-		public Comparator&lt;Object&gt; createComparator()
+		public int compare(Object o1,Object o2)
 			{
-			return new Comparator()
+			if(o1==null)
 				{
-				@Override
-				public int compare(Object o1,Object o2)
-					{
-					if(o1==null)
-						{
-						return o2==null?0:-1;
-						}
-					return Integer.class.cast(o1).compareTo(Integer.class.cast(o2));
-					}
-				};
+				return o2==null?0:-1;
+				}
+			return Integer.class.cast(o1).compareTo(Integer.class.cast(o2));
 			}
+			
 		@Override
-		public DataValue parse(String s)
+		public DataValue parseString(String s)
 			{
 			return new DefaultDataValue(this,new Integer(s));
 			}
@@ -164,23 +167,17 @@ public class Workflow
 	private static final  DataType doubleType = new AbstractDataType(Double.class)
 		{
 		@Override
-		public Comparator&lt;Object&gt; createComparator()
+		public int compare(Object o1,Object o2)
 			{
-			return new Comparator()
+			if(o1==null)
 				{
-				@Override
-				public int compare(Object o1,Object o2)
-					{
-					if(o1==null)
-						{
-						return o2==null?0:-1;
-						}
-					return Double.class.cast(o1).compareTo(Double.class.cast(o2));
-					}
-				};
+				return o2==null?0:-1;
+				}
+			return Double.class.cast(o1).compareTo(Double.class.cast(o2));
 			}
+			
 		@Override
-		public DataValue parse(String s)
+		public DataValue parseString(String s)
 			{
 			return new DefaultDataValue(this,new Double(s));
 			}
@@ -188,19 +185,21 @@ public class Workflow
 		
 	private static DataType getDataTypeByName(String typeName)
 		{
-		if(typeName==null) return stringType;
+		if(typeName==null) return Workflow.stringType;
 		typeName=typeName.toLowerCase();
-		if(typeName.equals("int") || typeName.equals("integer")) return intType;
-		if(typeName.equals("double") || typeName.equals("float")) return doubleType;
-		return stringType;
+		if(typeName.equals("int") || typeName.equals("integer")) return Workflow.intType;
+		if(typeName.equals("double") || typeName.equals("float")) return Workflow.doubleType;
+		return Workflow.stringType;
 		}
 	
 	private static interface DataValue extends Comparable&lt;DataValue&gt;
 		{
 		public DataType getDataType();
 		public Object getValue();
+		public void writeXml(XMLEventWriter w) throws XMLStreamException;
 		}
 	
+	/** default implementation of DataValue */
 	private static class DefaultDataValue
 		implements DataValue
 		{
@@ -214,15 +213,15 @@ public class Workflow
 		
 		DefaultDataValue(CharSequence value)
 			{
-			this(stringType,value.toString());
+			this(Workflow.stringType,value.toString());
 			}
 		DefaultDataValue(int value)
 			{
-			this(intType,value);
+			this(Workflow.intType,value);
 			}		
 		DefaultDataValue(double value)
 			{
-			this(doubleType,value);
+			this(Workflow.doubleType,value);
 			}
 		
 		public DataType getDataType()
@@ -246,7 +245,7 @@ public class Workflow
 			if(o==null || !(o instanceof DataValue)) return false;
 			DataValue other=DataValue.class.cast(o);
 			if(!getDataType().equals(other.getDataType())) return false;
-			if(getValue()==null &amp;&amp; other.getValue()==null) return true;
+			if(this.getValue()==null &amp;&amp; other.getValue()==null) return true;
 			return getValue().equals(other.getValue());
 			}
 		
@@ -257,7 +256,13 @@ public class Workflow
 		@Override
 		public String toString()
 			{
-			return String.valueOf(getValue();
+			return String.valueOf(this.getValue());
+			}
+		
+		@Override
+		public void writeXml(XMLEventWriter w) throws XMLStreamException
+			{
+			//TODO
 			}
 		}
 	
@@ -265,6 +270,7 @@ public class Workflow
 		{
 		public String getName();
 		public DataType getDataType();
+		public void writeXml(XMLEventWriter w) throws XMLStreamException;
 		}
 	
 	
@@ -285,12 +291,13 @@ public class Workflow
 			{
 			return this.name;
 			}
-		public void write(XMLEventWriter w) throws XMLStreamException
+		@Override
+		public void writeXml(XMLEventWriter w) throws XMLStreamException
 			{
 			QName qName = new QName("column");
 			w.add( xmlEventFactory.createStartElement(qName,null,null) );
 			w.add( xmlEventFactory.createCharacters(getName()) );
-			w.add( xmlEventFactory.createEndElement(qName,null);
+			w.add( xmlEventFactory.createEndElement(qName,null) );
 			}	
 		}
 
@@ -302,6 +309,7 @@ public class Workflow
 		public boolean contains(String name);
 		public int findColumnIndex(String name);
 		public Column findColumnByName(String name);
+		public void writeXml(XMLEventWriter w) throws XMLStreamException;
 		}
 	
 	private static abstract class AbstractColumnList implements ColumnList
@@ -341,9 +349,10 @@ public class Workflow
 			{
 			return getColumns().iterator();
 			}
-		public void write(XMLEventWriter w) throws XMLStreamException
+		@Override
+		public void writeXml(XMLEventWriter w) throws XMLStreamException
 			{
-			for(Column c:this) c.write(w);
+			for(Column c:this) c.writeXml(w);
 			}
 		}
 		
@@ -372,7 +381,7 @@ public class Workflow
 		public ColumnList getColumnList();
 		public DataValue get(int i);
 		public int size();
-		public void write(XMLEventWriter w) throws XMLStreamException;
+		public void writeXml(XMLEventWriter w) throws XMLStreamException;
 		}
 	
 	private static class DefaultRow implements DataRow
@@ -383,6 +392,10 @@ public class Workflow
 			{
 			this.columns = columns;
 			this.values = Collections.unmodifiableList(values);
+			}
+		DefaultRow( ColumnList columns, DataValue...values)
+			{
+			this(columns,Arrays.asList(values));
 			}
 		@Override
 		public ColumnList getColumnList()
@@ -404,16 +417,22 @@ public class Workflow
 			{
 			return this.values.iterator();
 			}
-			
-		public void write(XMLEventWriter w) throws XMLStreamException
+		@Override
+		public int hashCode()
+			{
+			return this.columns.hashCode()* 31 + this.values.hashCode();
+			}
+		
+		@Override
+		public void writeXml(XMLEventWriter w) throws XMLStreamException
 			{
 			QName qName = new QName("row");
 			w.add( xmlEventFactory.createStartElement(qName,null,null) );
 			for(DataValue dv : this)
 				{
-				dv.write(w);
+				dv.writeXml(w);
 				}
-			w.add( xmlEventFactory.createEndElement(qName,null);
+			w.add( xmlEventFactory.createEndElement(qName,null) );
 			}	
 			
 		}
@@ -426,15 +445,7 @@ public class Workflow
 		{
 		}
 
-
 	
-
-	
-	public static abstract class AbstractOutputNodeModel
-		implements OutputNodeModel
-		{
-		public abstract void execute(ExecutionContext context) throws WorkflowException;
-		}
 	
 	private class RowEvent
 		{
@@ -477,61 +488,106 @@ public class Workflow
 			}
 		}
 		
-	private interface Named
+	private static interface Named
 		{
-		public String getName();
+		public String getId();
 		public String getLabel();
 		public String getDescription();
 		}
 	
-	public interface NodeModel extends Named
+	/** implementation of Named */
+	private static abstract class AbstractNamed
+		implements Named
+		{
+		@Override
+		public abstract String getId();
+		@Override
+		public String getLabel()
+			{
+			return this.getId();
+			}
+		@Override
+		public String getDescription()
+			{
+			return this.getLabel();
+			}
+		@Override
+		public int hashCode()
+			{
+			return getId().hashCode();
+			}
+		@Override
+		public String toString()
+			{
+			return getLabel();
+			}
+		}	
+	
+	public static interface NodeModel extends Named
 		{
 		}
 	
-	public interface InputNodeModel extends NodeModel
+	public static interface ProducingDataNodeModel extends NodeModel
 		{
 		public void execute(ExecutionContext context) throws WorkflowException;
 		}
 	
-	public interface OutputNodeModel extends NodeModel
+	public static interface ConsummingDataNodeModel extends NodeModel
 		{
+
 		}
 	
-	privat class OutputSlot implements Named
+	private abstract class OutputSlot extends AbstractNamed
 		{
-		String name;
-		boolean is_default;
-		String getName() { return name;}
-		boolean isDefault() { return is_default;}
-		List&lt;InputNodeModel&gt; inputs = new ArrayList&lt;InputNodeModel&gt;();
+		public boolean isDefault() { return false;}
+		List&lt;ConsummingSlot&gt; consummers = new ArrayList&lt;ConsummingSlot&gt;();
 		
-		public void fireDataRow(ExecutionContext ctx,final DataRow row)
+		List&lt;ConsummingSlot&gt; getConsummers()
 			{
-			for(InputNodeModel n:getInputs())
+			return this.consummers;
+			}
+		
+		public void fireDataRow(ExecutionContext context,final DataRow row)  throws WorkflowException
+			{
+			for(ConsummingSlot c:getConsummers())
 				{
-				n.handleDataRow(ctx,row);
+				c.handleDataRow(context,row);
 				}
 			}
 		}
 	
-	abstract class AbstractOutputNodeModel
-		implements OutputNodeModel
+	private abstract class ConsummingSlot extends AbstractNamed
 		{
-		protected AbstractOutputNodeModel()
+		public abstract void handleDataRow(ExecutionContext context,final DataRow row)  throws WorkflowException;
+		}
+	
+	
+	abstract class AbstractConsummingDataNodeModel
+		extends AbstractNamed
+		implements ConsummingDataNodeModel
+		{
+		protected AbstractConsummingDataNodeModel()
+			{
+			}
+		
+		}  
+	
+	abstract class AbstractProducingDataNodeModel
+		extends AbstractNamed
+		implements ProducingDataNodeModel
+		{
+		protected AbstractProducingDataNodeModel()
 			{
 			}
 		
 		public abstract List&lt;OutputSlot&gt; getOutputSlots();
-	
-	
-
 	
 		public OutputSlot getOutputSlotByName(String name)
 			{
 			OutputSlot sel = null;
 			for(OutputSlot slot: getOutputSlots())
 				{
-				if(slot.getName().equals(name))
+				if(slot.getLabel().equals(name))
 					{
 					if( sel == null ) throw new RuntimeException("");
 					sel = slot;
@@ -571,9 +627,10 @@ public class Workflow
 
 	
 	private abstract class Pipeline
+		extends AbstractNamed
 		{
-		List inputs= new ArrayList();
-		List outputs= new ArrayList();		
+		List&lt;Object&gt; inputs= new ArrayList&lt;Object&gt;();
+		List&lt;Object&gt; outputs= new ArrayList&lt;Object&gt;();		
 			
 		abstract public Pipeline build();
 		}
@@ -625,7 +682,7 @@ public class Workflow
 	private static class Frame extends JFrame
 		{
 		<xsl:for-each select="param">
-		private JTextField <xsl:apply-templates select="." mode="id"> = null;
+		private JTextField <xsl:apply-templates select="." mode="id"/> = null;
 		</xsl:for-each>
 		
 		private void install()
@@ -639,40 +696,49 @@ public class Workflow
 	
 	<xsl:for-each select="param">
 	/** <xsl:value-of select="@name"/> */
-	private DataValue <xsl:apply-templates select="." mode="id"> = null;
+	private DataValue <xsl:apply-templates select="." mode="id"/> = null;
 	</xsl:for-each>
 	
-	private void readConfig(File f)
+	private int readConfig(File f)
 		{
-		FileInputStream in =new FileInputStream(f);
-		Properties props=new Properties();
-		if(f.getName().endsWith(".xml"))
+		try
 			{
-			props.loadFromXML(in);
+			FileInputStream in =new FileInputStream(f);
+			Properties props=new Properties();
+			if(f.getName().endsWith(".xml"))
+				{
+				props.loadFromXML(in);
+				}
+			else
+				{
+				props.load(in);
+				}
+			in.close();
+			<xsl:for-each select="param">
+			if(<xsl:apply-templates select="." mode="id"/>==null &amp;&amp; props.containsKey("<xsl:value-of select="@name"/>"))
+				{
+				<xsl:apply-templates select="." mode="id"/> = getDataTypeByName("<xsl:apply-templates select="." mode="datatype"/>").
+					parseString(props.getProperty("<xsl:value-of select="@name"/>"));
+				}
+			</xsl:for-each>
+			return 0;
 			}
-		else
+		catch(Exception err)
 			{
-			prpos.load(in);
+			return -1;
 			}
-		in.close();
-		<xsl:for-each select="param">
-		if(<xsl:apply-templates select="." mode="id">==null &amp;&amp; props.containsKey("<xsl:value-of select="@name"/>"))
-			{
-			<xsl:apply-templates select="." mode="id"> = getDataTypeByName("<xsl:apply-templates select="." mode="datatype"/>").
-				parseString(props.getProperty("<xsl:value-of select="@name"/>"));
-			}
-		</xsl:for-each>
 		}
 	
 	private void usage(PrintWriter pw)
 		{
-		pw.println("Pierre Lindenbaum PhD. 2015");
+		pw.println("Pierre Lindenbaum PhD. <xsl:value-of select="d:year()"/>");
 		pw.println("Options:");
 		pw.println(" -h help; This screen.");
 		<xsl:for-each select="param">
 		pw.println(" --<xsl:value-of select="@name"/>");
 		</xsl:for-each>
 		pw.println();
+		pw.flush();
 		}
 	
 	private int instanceMain(String args[])
@@ -684,13 +750,17 @@ public class Workflow
 			   args[optind].equals("-help") ||
 			   args[optind].equals("--help"))
 				{
-
+				usage(new PrintWriter(System.out));
 				return 0;
+				}
+			else if(args[optind].equals("--config"))
+				{
+				//TODO
 				}
 			<xsl:for-each select="param">
 			else if(args[optind].equals("--<xsl:value-of select="@name"/>))
 				{
-				this.<xsl:apply-templates select="." mode="id"> = getDataTypeByName("<xsl:apply-templates select="." mode="datatype"/>").parseDataValue(args[++optind]);
+				this.<xsl:apply-templates select="." mode="id"/> = getDataTypeByName("<xsl:apply-templates select="." mode="datatype"/>").parseDataValue(args[++optind]);
 				}
 			</xsl:for-each>
 			else if(args[optind].equals("--"))
@@ -710,11 +780,11 @@ public class Workflow
 			++optind;
 			}
 		<xsl:for-each select="param">
-		if(<xsl:apply-templates select="." mode="id"> == null )
+		if(<xsl:apply-templates select="." mode="id"/> == null )
 			{
 			<xsl:choose>
 				<xsl:when test="@default">
-				 	<xsl:apply-templates select="." mode="id"> = parseDataValue("<xsl:value-of select="@default"/>");
+				 	<xsl:apply-templates select="." mode="id"/> = parseDataValue("<xsl:value-of select="@default"/>");
 				</xsl:when>
 				<xsl:otherwise>
 					LOG.exiting("Workflow","Main","variable <xsl:value-of select="@name"/> was not set by user");
@@ -751,7 +821,7 @@ this.inputs.add(<xsl:value-of select="generate-id()"/>);
 <xsl:template match="file-writer">
 FileWriterNode <xsl:value-of select="generate-id()"/> = new FileWriterNode()
 	{
-	
+
 
 	};
 this.outputs.add(<xsl:value-of select="generate-id()"/>);
@@ -775,6 +845,7 @@ Pipeline <xsl:apply-templates select="." mode="id"/> = new Pipeline()
 		<xsl:apply-templates select="*"/>
 		return this;
 		}
+	<xsl:apply-templates select="." mode="named"/>
 	};
 
 </xsl:template>
@@ -789,14 +860,17 @@ class AddColumnNodeModel
 
 
 <xsl:template match="read-fasta">
-class ReadFasta
+abstract class ReadFasta extends AbstractProducingDataNodeModel
 	{
 	private final ColumnList  cols = new DefaultColumnList(
 			new DefaultColumn(stringType,"Name"),
 			new DefaultColumn(stringType,"Sequence")
 			);
+	private final OutputSlot outputSlot= new OutputSlot()
+		{
+		<xsl:apply-templates select="." mode="named"/>
+		};
 	
-	@Override
 	public 	ColumnList getColumns()
 		{
 		return this.cols;
@@ -804,55 +878,70 @@ class ReadFasta
 	
 	BufferedReader open()
 		{
+		return null;
 		}
-	public void execute() throws Exception
+	@Override
+	public void execute(ExecutionContext context) throws WorkflowException
 		{
-		String line;
-		String name=null;
-		StringBuilder seq = new StringBuilder();
-		BufferedReader r= open();
-		fireHeader(cols,null);
-		for(;;)
+		try
 			{
-			String line= seq.readLine();
-			if( line == null || line.startsWith(">") )
+			String line =null;
+			String name=null;
+			StringBuilder seq = new StringBuilder();
+			BufferedReader r= open();
+			/* fireHeader(cols,null); */
+			for(;;)
 				{
-				if(seq!=null)
+				line= r.readLine();
+				if( line == null || line.startsWith(">") )
 					{
-					fireRowEvent(new DefaultRow(
-						ReadFasta.this.cols,
-						new DefaultDataValue(name),
-						new DefaultDataValue(seq),
-						));
+					if(seq!=null)
+						{
+						DataRow newrow = new DefaultRow(
+							this.getColumns(),
+							new DefaultDataValue(name),
+							new DefaultDataValue(seq)
+							);
+						this.outputSlot.fireDataRow(context,newrow); 
+						}
+					if(line==null) break;
+					name=line;
+					seq=new StringBuilder();
+					continue;
 					}
-				if(line==null) break;
-				name=line;
-				seq=new StringBuilder();
-				continue;
+				seq.append(line);
 				}
-			seq.append(line);
 			}
-		fireFooter(cols,null);
+		catch(IOException err)
+			{
+			throw new WorkflowException(err);
+			}
+		/* fireFooter(cols,null); */
 		}
-	public void fireRowEvent(FireRowEvent evt)
+	
+	
+	@Override
+	public List&lt;OutputSlot&gt; getOutputSlots()
 		{
-		
+		return Collections.singletonList(this.outputSlot);
 		}
 	}
 ReadFasta <xsl:apply-templates select="." mode="id"/> = new ReadFasta()
 	{
-	
+	<xsl:apply-templates select="." mode="named"/>
 	};
 this.inputs.add(<xsl:apply-templates select="." mode="id"/>);
 </xsl:template>
 
 <xsl:template match="write-fasta">
-class WriteFasta
+abstract class WriteFasta extends AbstractConsummingDataNodeModel
 	{
+			
 	
 	}
 WriteFasta <xsl:apply-templates select="." mode="id"/> = new WriteFasta()
 	{
+	<xsl:apply-templates select="." mode="named"/>
 	};
 this.outputs.add(<xsl:apply-templates select="." mode="id"/>);
 </xsl:template>
@@ -924,6 +1013,34 @@ OutputSlot <xsl:apply-templates select="." mode="id"/> = new OutputSlot();
 <xsl:template match="*" mode="id">
 <xsl:value-of select="generate-id(.)"/>
 </xsl:template>
+
+<xsl:template match="*" mode="getid">
+	@Override
+	public String getId()
+		{
+		return "<xsl:value-of select="generate-id()"/>";
+		}
+</xsl:template>
+
+
+<xsl:template match="*" mode="named">
+	<xsl:apply-templates select="." mode="getid"/>
+	<xsl:if test="@name">
+	@Override
+	public String getLabel()
+		{
+		return "<xsl:value-of select="@name"/>";
+		}
+	</xsl:if>
+	<xsl:if test="@description">
+	@Override
+	public String getDescription()
+		{
+		return "<xsl:value-of select="@description"/>";
+		}
+	</xsl:if>	
+</xsl:template>
+
 
 <xsl:template match="text()" mode="escape">
 <xsl:value-of select="."/>
