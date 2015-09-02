@@ -1,6 +1,7 @@
 <?xml version='1.0'  encoding="UTF-8" ?>
 <xsl:stylesheet
         xmlns:xsl='http://www.w3.org/1999/XSL/Transform'
+        xmlns:svg="http://www.w3.org/2000/svg"
         version='1.0'
         >
 <!-- idea from https://thimble.mozilla.org/ -->
@@ -15,12 +16,14 @@
   <head>
     <title>Create Your Own Comic: A Starter Make</title>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Indie+Flower"></link>
     <!-- These are the styles for the comic -->
     <style>
       body {
         background-color: #efefef;
-        font-family: "Comic Sans MS", sans-serif;
+       font-family: 'Indie Flower', serif;
+        font-size: 48px;
+
         line-height: 1.2;
         text-align: center;
         padding: 40px 0 0 20px;
@@ -170,6 +173,9 @@ The 'comic' <div> wraps around each comic 'scene' to contain them all.
 	</xsl:choose>
 </xsl:attribute>
 <xsl:apply-templates/>
+<svg:svg width="100" height="100">
+	<svg:rect fill="red" x="10" y="5" width="50" height="60"/>
+</svg:svg>
 </p>
 </xsl:template>
 
