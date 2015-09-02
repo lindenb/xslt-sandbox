@@ -23,7 +23,7 @@
 <xsl:apply-templates select="*|text()"/>
 </xsl:template>
 
-<xsl:template match="table|thead|tr|tbody|ul|ol">var <xsl:apply-templates select="." mode="var"/>= document.createElement("<xsl:value-of select="name(.)"/>");
+<xsl:template match="table|thead|tr|tbody|ul|ol|embed|object|param">var <xsl:apply-templates select="." mode="var"/>= document.createElement("<xsl:value-of select="name(.)"/>");
 <xsl:if test="count(ancestor::*)&gt;0"><xsl:apply-templates select=".." mode="var"/>.appendChild(<xsl:apply-templates select="." mode="var"/>);
 </xsl:if>
 <xsl:apply-templates select="@*"/>

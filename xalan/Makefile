@@ -18,7 +18,7 @@ all: dist/xalan
 	
 dist/xalan : dist/xalan.jar ${xalan.libs} 
 	echo '#!/bin/bash' > $@
-	echo 'java -Dhttp.proxyHost=cache.ha.univ-nantes.fr -Dhttp.proxyPort=3128 -Dhttps.proxyHost=cache.ha.univ-nantes.fr -Dhttps.proxyPort=3128 -Dfile.encoding=UTF8 -cp "$(subst $(SPACE),:,$(filter %.jar,$^))" org.apache.xalan.xslt.Process $$*' >>  $@
+	echo 'java -Dfile.encoding=UTF8 -cp "$(subst $(SPACE),:,$(filter %.jar,$^))" org.apache.xalan.xslt.Process $$*' >>  $@
 	chmod +x  $@
 
 dist/xalan.jar : ./src/main/java/com/github/lindenb/xslt/img/Image.java ${xalan.libs} 
