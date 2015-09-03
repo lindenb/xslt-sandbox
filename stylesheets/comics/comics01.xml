@@ -1,0 +1,10 @@
+<comic title="Test">
+<page>
+<scene>
+        <img src="http://farm1.staticflickr.com/13/17778109_cc9d631ba7.jpg" />
+        <img src="https://upload.wikimedia.org/wikipedia/commons/d/de/Enalapril_VanDerVals_transparent.png"/>
+        <think>Look at the view!</think>
+        <caption>Set the scene for the comic...</caption>
+</scene>
+</page>
+</comic>
