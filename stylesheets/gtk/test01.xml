@@ -1,0 +1,12 @@
+<window width="600" height="150" position="center" title="Hello">
+	<hbox>
+		<menubar>
+			<menu label="File x">
+				<menuitem label="Hello"/>
+				<menuitem label="Hello"/>
+				<menuitem label="Hello"/>
+				<menuitem label="Hello"/>
+			</menu>
+		</menubar>
+	</hbox>
+</window>
