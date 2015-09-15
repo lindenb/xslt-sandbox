@@ -7,6 +7,8 @@
 <xsl:template match="/">
 #include &lt;gtk/gtk.h&gt;
 
+#define WHERE fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
+
 int main( int   argc,
           char *argv[] )
 {
