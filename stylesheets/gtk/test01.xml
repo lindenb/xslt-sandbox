@@ -1,0 +1,21 @@
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	width="600" height="150" position="center" title="Hello">
+	<vbox>
+		<menubar>
+			<menu label="File x" >
+				<menuitem label="Hello"/>
+				<menuitem label="Hello"/>
+				<separator/>
+				<menuitem label="Hello"/>
+			</menu>
+		</menubar>
+		<notebook>
+			<tab label="Reference">
+			<file-open-button/>
+			</tab>
+			<tab label="Hello">
+			<file-open-button/>
+			</tab>
+		</notebook>
+	</vbox>
+</window>
