@@ -5,6 +5,7 @@
 	exclude-result-prefixes="x"
 	version="1.1"
 	>
+<xsl:import  href="../util/mod.drawing.xsl"/>
  <xsl:output method="html" omit-xml-declaration="yes" indent="no"/>
 <xsl:template match="/">
  <xsl:apply-templates select="html"/>
@@ -14,6 +15,15 @@
 
 
 <xsl:template match="html">
+
+<xsl:text>
+
+</xsl:text>
+<xsl:value-of select="$now"/>
+<xsl:text>
+
+</xsl:text>
+
 <div>
  <xsl:text>Source: </xsl:text>
 <xsl:element name="a">
@@ -38,23 +48,26 @@
 		</xsl:otherwise>
 	</xsl:choose>
 </xsl:element>
- <xsl:text>. ( </xsl:text>
+ <xsl:text>. (</xsl:text>
  <xsl:apply-templates select="//a[@data-bind='license']"/>
- <xsl:text>) </xsl:text>
-       <xsl:value-of select="x:month-name()"/>
-      <xsl:text> </xsl:text>
-      <xsl:value-of select="x:day-in-month()"/>
-      <xsl:text>, </xsl:text>
-      <xsl:value-of select="x:year()"/>
-      <xsl:text>.</xsl:text>
+  <xsl:apply-templates select="//script"/>
+ <xsl:text>). </xsl:text>
+ <xsl:value-of select="$today"/>
+<xsl:text>.</xsl:text>
 </div>
-    <div>
-	<a href="http://tyeul.tumblr.com/">Tumblr</a><xsl:text> </xsl:text>
-	<a href="http://yokofakun.deviantart.com/">DeviantArt</a><xsl:text> </xsl:text>
-	<a href="https://www.facebook.com/kakaheska">Facebook</a><xsl:text> </xsl:text>
-	<a href="https://www.flickr.com/photos/lindenb/">Flickr</a><xsl:text> </xsl:text>
-	<a href="http://www.pinterest.com/yokofakun/drawings/">Pinterest</a>
-    </div>
+<xsl:call-template name="my-links"/>
+
+<xsl:text>
+
+
+</xsl:text>
+<xsl:value-of select="$commontags"/><xsl:text> 500px
+
+</xsl:text>
+<xsl:value-of select="translate($commontags,' ',',')"/>
+<xsl:text>,500px
+
+</xsl:text>
 
 </xsl:template>
 
@@ -65,5 +78,31 @@
 </a>
 </xsl:template>
 
+<xsl:template match="script">
+<xsl:choose>
+<xsl:when test="contains(.,',&quot;license_type&quot;:0,')">
+<xsl:text>Standard 500px License</xsl:text>
+</xsl:when>
+<xsl:when test="contains(.,',&quot;license_type&quot;:1,')">
+<xsl:text>Creative Commons License Non Commercial Attribution</xsl:text>
+</xsl:when>
+<xsl:when test="contains(.,',&quot;license_type&quot;:2,')">
+<xsl:text>Creative Commons License Non Commercial No Derivatives</xsl:text>
+</xsl:when>
+<xsl:when test="contains(.,',&quot;license_type&quot;:3,')">
+<xsl:text>Creative Commons License Non Commercial Share Alike</xsl:text>
+</xsl:when>
+<xsl:when test="contains(.,',&quot;license_type&quot;:4,')">
+<xsl:text>Creative Commons License Attribution</xsl:text>
+</xsl:when>
+<xsl:when test="contains(.,',&quot;license_type&quot;:5,')">
+<xsl:text>Creative Commons License No Derivatives</xsl:text>
+</xsl:when>
+<xsl:when test="contains(.,',&quot;license_type&quot;:6,')">
+<xsl:text>Creative Commons License Share Alike</xsl:text>
+</xsl:when>
+
+</xsl:choose>
+</xsl:template>
 
 </xsl:stylesheet>
