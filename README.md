@@ -188,6 +188,29 @@ see https://github.com/lindenb/xslt-sandbox/wiki/PubmedTrending
 ![http://i.imgur.com/a1VAdCa](http://i.imgur.com/a1VAdCa.jpg)
 
 
+### XML to dot
+
+show a XML tree as graphviz dot
+
+```
+$ curl -s  "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&id=25&retmode=xml&rettype=fasta" |\
+ xsltproc xml2dot.xsl  - 
+````
+
+```dot
+digraph G
+	{
+	idp0 [label="<ROOT>"];
+	idp5184 [label="TSeqSet",shape=oval]
+idp5120 [label="TSeq",shape=oval]
+idp228784 [label="TSeq_seqtype",shape=oval]
+idp234608 [label="@value=nucleotide",shape=box]
+idp234608 -> idp228784;
+idp228784 -> idp5120;
+(...)
+```
+
+
 ### Blast to fasta
 
 see https://www.biostars.org/p/14913/
