@@ -215,8 +215,30 @@ idp228784 -> idp5120;
 
 see https://www.biostars.org/p/14913/
 
-```
+```bash
 xsltproc --novalid blast2fasta.xsl blastn.xml
+```
+
+### PSI/Biogrid to SQL
+
+```bash
+xsltproc -o tmp.sql psi2sql.xslt BIOGRID-ALL-3.4.129.psi.xml
+sqlite3 db.sqlite3 < tmp.sql
+```
+
+find the interactions for B4DG32  (http://www.uniprot.org/uniprot/B4DG32 )
+
+```bash
+$ sqlite3 -header db.sqlite3  'select distinct I1.shortLabel,I2.shortLabel from interaction as L,interaction2interactor as I2I1, interaction2interactor as I2I2, interactor as I1 ,interactor as I2, xref as X1 where X1.pk="B4DG32" and X1.interactor_pk=I1.pk and I2I1.interaction_pk = L.pk and I2I1.interactor_pk = I1.pk and I2I2.interaction_pk = L.pk and I2I2.interactor_pk = I2.pk'
+
+shortLabel|shortLabel
+SH2D3C|BCAR1
+SH2D3C|EFS
+SH2D3C|EGFR
+SH2D3C|LYN
+SH2D3C|NEDD9
+SH2D3C|SH2D3C
+SH2D3C|SNCAIP
 ```
 
 ## Contribute
