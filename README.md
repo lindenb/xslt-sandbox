@@ -241,6 +241,28 @@ SH2D3C|SH2D3C
 SH2D3C|SNCAIP
 ```
 
+### Get the coverage of a blast query.
+
+```bash
+$ xsltproc stylesheets/bio/ncbi/blast2coverage.xsl blastn.xml
+```
+
+output:
+```tsv
+#ID	DEF	POS	LENGTH	CONSENSUS	DEPTH
+gi|9626372|ref|NC_001422.1|	Enterobacteria phage phiX174 sensu lato, complete genome	1	5386	GGGGGGGGGGGGGGGGGG	18
+gi|9626372|ref|NC_001422.1|	Enterobacteria phage phiX174 sensu lato, complete genome	2	5386	AAAAAAAAAAAAAAAAAA	18
+gi|9626372|ref|NC_001422.1|	Enterobacteria phage phiX174 sensu lato, complete genome	3	5386	GGGGGGGGGGGGGGGGGG	18
+gi|9626372|ref|NC_001422.1|	Enterobacteria phage phiX174 sensu lato, complete genome	4	5386	TTTTTTTTTTTTTTTTTT	18
+gi|9626372|ref|NC_001422.1|	Enterobacteria phage phiX174 sensu lato, complete genome	5	5386	TTTTTTTTTTTTTTTTTT	18
+gi|9626372|ref|NC_001422.1|	Enterobacteria phage phiX174 sensu lato, complete genome	6	5386	TTTTTTTTTTTTTTTTTT	18
+gi|9626372|ref|NC_001422.1|	Enterobacteria phage phiX174 sensu lato, complete genome	7	5386	TTTTTTTTTTTTTTTTTT	18
+gi|9626372|ref|NC_001422.1|	Enterobacteria phage phiX174 sensu lato, complete genome	8	5386	AAAAAAAAAAAAAAAAAA	18
+gi|9626372|ref|NC_001422.1|	Enterobacteria phage phiX174 sensu lato, complete genome	9	5386	TTTTTTTTTTTTTTTTTT	18
+(...)
+```
+
+
 ## Contribute
 
 - Issue Tracker: http://github.com/lindenb/xslt-sandbox/issues`

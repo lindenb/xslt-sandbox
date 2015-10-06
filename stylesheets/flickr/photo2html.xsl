@@ -4,6 +4,7 @@
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	exclude-result-prefixes="x"
 	version="1.1">
+  <xsl:import href="../util/mod.drawing.xsl"/>
   <xsl:output method="html" omit-xml-declaration="yes" indent="no"/>
   <!--
 
@@ -24,7 +25,17 @@ Usage:
     <xsl:variable name="u">
       <xsl:value-of select="concat('http://www.flickr.com/photos/',owner/@nsid,'/',@id)"/>
     </xsl:variable>
+    <xsl:text>
+    
+    
+    </xsl:text>
+    <xsl:value-of select="$now"/>
+    <xsl:text>
+    
+    
+    </xsl:text>
     <div>
+      <xsl:if test="number(x:month-in-year())=10">#inktober </xsl:if>
       <xsl:text>Source: </xsl:text>
       <xsl:element name="a">
         <xsl:attribute name="href">
@@ -104,18 +115,15 @@ Usage:
 
 
 </xsl:text>
-<xsl:variable name="commontags">drawing sketch illustration gimp onedrawingaday portrait dessin femme fille art retrato face visage artwork</xsl:variable>
-<xsl:comment>Common tags
-
-<xsl:value-of select="$commontags"/>
+<xsl:value-of select="$commontags"/> flickr
 <xsl:text>
 
 </xsl:text>
-<xsl:value-of select="translate($commontags,' ',',')"/>
+<xsl:value-of select="translate($commontags,' ',',')"/>,flickr
 <xsl:text>
 
 </xsl:text>
-</xsl:comment>
+
 
   </xsl:template>
   <xsl:template match="owner">

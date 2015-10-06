@@ -25,7 +25,8 @@
 </xsl:text>
 
 <div>
- <xsl:text>Source: </xsl:text>
+<xsl:if test="number(x:month-in-year())=10">#inktober </xsl:if>
+<xsl:text>Source: </xsl:text>
 <xsl:element name="a">
 <xsl:attribute name="href"><xsl:value-of select="head/meta[@property='og:url']/@content"/></xsl:attribute>
 <xsl:value-of select="head/meta[@property='og:title']/@content"/>
