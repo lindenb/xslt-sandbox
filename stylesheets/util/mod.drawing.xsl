@@ -40,6 +40,6 @@
 </xsl:template>
 
 
-<xsl:variable name="commontags">drawing sketch illustration gimp onedrawingaday portrait dessin femme fille art retrato face visage artwork<xsl:if test="number(x:month-in-year())=10"> inktober</xsl:if></xsl:variable>
+<xsl:variable name="commontags">drawing sketch illustration gimp onedrawingaday portrait dessin femme fille art retrato face visage artwork draw sketchaday dailydrawing sketch_daily<xsl:if test="number(x:month-in-year())=10"> inktober</xsl:if></xsl:variable>
 
 </xsl:stylesheet>
