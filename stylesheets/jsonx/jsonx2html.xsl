@@ -22,7 +22,14 @@ Usage:
 <html>
 <head>
 <style>
-.string { color: gray;}
+dt {
+    font-weight: bold;
+    color: blue;
+  }
+dt:after {
+    content: " : ";
+  }
+.string { color: darkgray;}
 .boolean { color: green;}
 .null { color: red;}
 .number { color: blue;}
@@ -53,7 +60,14 @@ Usage:
 </xsl:template>
 
 <xsl:template match="x:string">
-<span class="string"><xsl:value-of select="."/></span>
+<span class="string">
+<xsl:choose>
+  <xsl:when test='starts-with(text(),"http://") or starts-with(text(),"https://") or starts-with(text(),"ftp://")'>
+    <a><xsl:attribute name="href"><xsl:value-of select="."/></xsl:attribute><xsl:value-of select="."/></a>
+  </xsl:when>
+  <xsl:otherwise><xsl:value-of select="."/></xsl:otherwise>
+</xsl:choose>
+</span>
 </xsl:template>
 
 <xsl:template match="x:number">
