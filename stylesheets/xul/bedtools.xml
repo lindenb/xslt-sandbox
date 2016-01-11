@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<app name="bedtools"
+	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	xmlns="https://github.com/lindenb/xslt-sandbox/blob/master/stylesheets/xul/app2xul.xsl"
+	xmlns:html="http://www.w3.org/1999/xhtml"
+	>
+	<description>bedtools: a powerful toolset for genome arithmetic</description>
+	
+	<command name="intersect">
+		<description>xx</description>
+		<input-file opt="a"  label="A">
+			<description>BAM/BED/GFF/VCF file “A”. Each feature in A is compared to B in search of overlaps.</description>
+		</input-file>
+	</command>
+	
+</app>
