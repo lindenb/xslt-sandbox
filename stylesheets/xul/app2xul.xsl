@@ -79,10 +79,17 @@ pref("nglayout.debug.disable_xul_fastload", true);
 		<xsl:value-of select="concat('chrome://',$appname,'/content/',$appname,'.js')"/>
 	</xsl:attribute>
 </xul:script>
-<xul:menubar id="sample-menubar">
-	<xul:menu id="file-menu" label="File">
-	</xul:menu>
-</xul:menubar>
+<xul:toolbox>
+	<xul:menubar id="sample-menubar">
+		<xul:menu id="file-menu" label="File">
+			<xul:menupopup>
+			 <xul:menuseparator/>
+			 <xul:menuitem label="Exit" oncommand="window.close();"/>
+			 </xul:menupopup>
+		</xul:menu>
+	</xul:menubar>
+</xul:toolbox>
+
 
 <xul:tabbox>
 	<xul:tabs>
@@ -155,23 +162,30 @@ function exectute_<xsl:value-of select="@name"/>()
 </xsl:template>
 
 
+<xsl:template match="my:checkbox" mode="js">
+</xsl:template>
+
 <xsl:template match="my:checkbox" mode="xul">
 <xul:checkbox>
 <xsl:attribute name="id"><xsl:value-of select="generate-id(.)"/></xsl:attribute>
-<xsl:attribute name="label"> </xsl:attribute>
+<xsl:attribute name="label"><xsl:apply-templates select="." mode="label"/></xsl:attribute>
 <xsl:attribute name="checked"><xsl:value-of select="@checked"/></xsl:attribute>
 </xul:checkbox>
 </xsl:template>
 
+
+<xsl:template match="my:textbox" mode="js">
+</xsl:template>
+
 <xsl:template match="my:textbox" mode="xul">
 <xul:hbox>
-<xul:label>
-	<xsl:attribute name="label"> </xsl:attribute>
+<xul:label flex="1">
+	<xsl:attribute name="value"><xsl:apply-templates select="." mode="label"/>:</xsl:attribute>
 	<xsl:attribute name="control"><xsl:value-of select="generate-id(.)"/></xsl:attribute>
 </xul:label>
-<xul:textbox>
+<xul:textbox flex="5">
 <xsl:attribute name="id"><xsl:value-of select="generate-id(.)"/></xsl:attribute>
-<xsl:attribute name="value"><xsl:value-of select="generate-id(.)"/>:</xsl:attribute>
+<xsl:attribute name="value"></xsl:attribute>
 <xsl:attribute name="checked"><xsl:value-of select="@checked"/></xsl:attribute>
 </xul:textbox>
 </xul:hbox>
@@ -185,7 +199,7 @@ function <xsl:value-of select="concat('select',generate-id(.),'()')"/> {
 	fp.init(window, "Select a File", nsIFilePicker.modeOpen);
 	var res = fp.show();
 	if (res != nsIFilePicker.returnCancel){
-		document.getElementById('<xsl:value-of select="generate-id(.)"/>').value = "okk";
+		document.getElementById('<xsl:value-of select="generate-id(.)"/>').value = fp.file.path;
 		}
 	}
 
@@ -193,21 +207,28 @@ function <xsl:value-of select="concat('select',generate-id(.),'()')"/> {
 
 <xsl:template match="my:input-file" mode="xul">
 <xul:hbox>
-<xul:label>
-	<xsl:attribute name="label"> </xsl:attribute>
+<xul:label flex="1">
+	<xsl:attribute name="value"><xsl:apply-templates select="." mode="label"/>:</xsl:attribute>
 	<xsl:attribute name="control"><xsl:value-of select="generate-id(.)"/></xsl:attribute>
 </xul:label>
-<xul:textbox>
+<xul:textbox flex="4">
 <xsl:attribute name="id"><xsl:value-of select="generate-id(.)"/></xsl:attribute>
 <xsl:attribute name="value"><xsl:value-of select="generate-id(.)"/>:</xsl:attribute>
 <xsl:attribute name="checked"><xsl:value-of select="@checked"/></xsl:attribute>
 </xul:textbox>
-<xul:button label="Select ...">
+<xul:button label="Select ..."  flex="1">
 	<xsl:attribute name="oncommand"><xsl:value-of select="concat('select',generate-id(.),'();')"/></xsl:attribute>
 </xul:button>
 </xul:hbox>
 </xsl:template>
 
-
+<xsl:template match="*" mode="label">
+<xsl:choose>
+	<xsl:when test="@label"><xsl:value-of select="@label"/></xsl:when>
+	<xsl:when test="my:label"><xsl:value-of select="my:label"/></xsl:when>
+	<xsl:when test="name"><xsl:value-of select="@name"/></xsl:when>
+	<xsl:otherwise><xsl:value-of select="generate-id()"/></xsl:otherwise>
+</xsl:choose>
+</xsl:template>
 </xsl:stylesheet>
 
