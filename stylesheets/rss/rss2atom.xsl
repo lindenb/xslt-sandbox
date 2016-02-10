@@ -31,8 +31,31 @@
 <xsl:template match="item">
 <entry>
 	<xsl:apply-templates select="guid"/>
-	<xsl:apply-templates select="title"/>
 	<xsl:apply-templates select="pubDate"/>
+
+	<xsl:choose>
+		<xsl:when test="title">
+			<title type="text">
+			  <xsl:value-of select="link"/>
+			</title>
+		</xsl:when>
+		<xsl:otherwise>
+		</xsl:otherwise>
+	</xsl:choose>
+
+
+	<xsl:choose>
+		<xsl:when test="link">
+			<link rel="alternate">
+				<xsl:attribute name="href">
+					<xsl:apply-templates select="link"/>
+				</xsl:attribute>
+			</link>
+		</xsl:when>
+		<xsl:otherwise>
+		</xsl:otherwise>
+	</xsl:choose>
+
 	<xsl:choose>
 		<xsl:when test="description">
 			<content type="html"><xsl:apply-templates select="description"/></content>

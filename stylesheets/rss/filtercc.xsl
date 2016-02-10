@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet 
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+	xmlns:media="http://search.yahoo.com/mrss/"
 	xmlns:creativeCommons="http://backend.userland.com/creativeCommonsRssModule"
 	version="1.0">
 <xsl:output method="xml"/>
@@ -19,6 +20,11 @@
 <xsl:variable name="fromda" select="starts-with(../link/text(),'http://www.deviantart.com/')"/>
 <xsl:variable name="license" select="creativeCommons:license/text()"/>
 <xsl:choose>
+	<xsl:when test="starts-with(media:category,'resources/stockart/')">
+		<item>
+			<xsl:apply-templates select="@*|node()"/>
+		</item>
+	</xsl:when>
 	<xsl:when test="$fromda and ( (starts-with($license,'http://creativecommons.org/') and  contains($license,'-nd') ) or not(creativeCommons:license) )">
 		<xsl:comment>filtered out <xsl:value-of select="link"/> </xsl:comment>
 	</xsl:when>

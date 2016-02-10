@@ -8,11 +8,11 @@
 	
 	<command name="intersect">
 		<description>xx</description>
-		<input-file opt="a"  label="A">
+		<input-file label="A">
 			<description>BAM/BED/GFF/VCF file A. Each feature in A is compared to B in search of overlaps.</description>
 		</input-file>
-		<checkbox opt="x"  label="XX">
-			<description>BAM/BED/GFF/VCF file A. Each feature in A is compared to B in search of overlaps.</description>
+		<checkbox label="header">
+			<description>printheader.</description>
 		</checkbox>
 	</command>
 	
