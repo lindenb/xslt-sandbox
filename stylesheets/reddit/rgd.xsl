@@ -28,7 +28,7 @@
 <xsl:text>
 
 My drawing PASTEURL :  tracing, uni-pin &amp; uni-prockey markers, scanning, coloring with gimp. 
-My sites : [tumblr](http://tyeul.tumblr.com/), [deviantart](http://yokofakun.deviantart.com/), [facebook](https://www.facebook.com/kakaheska), [flickr](https://www.flickr.com/photos/lindenb/), [pinterest](http://www.pinterest.com/yokofakun/drawings/) </xsl:text>
+My sites : [tumblr](http://tyeul.tumblr.com/)|[DA](http://yokofakun.deviantart.com/)|[FB](https://www.facebook.com/kakaheska)|[flickr](https://www.flickr.com/photos/lindenb/)|[pinterest](http://www.pinterest.com/yokofakun/drawings/) </xsl:text>
 
 
 
