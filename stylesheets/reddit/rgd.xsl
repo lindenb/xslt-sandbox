@@ -20,17 +20,19 @@
 <xsl:text>
 
 </xsl:text>
-<xsl:value-of select="$commontags"/> redditgetsdrawn
+<xsl:value-of select="$commontags"/> redditgetsdrawn rgd
 <xsl:text>
 
 </xsl:text>
-<xsl:value-of select="translate($commontags,' ',',')"/>,redditgetsdrawn
+<xsl:value-of select="translate($commontags,' ',',')"/>,redditgetsdrawn,rgd
 <xsl:text>
 
 My drawing PASTEURL 
 
-[tumblr](http://tyeul.tumblr.com/)|[DA](http://yokofakun.deviantart.com/)|[FB](https://www.facebook.com/kakaheska), [flickr](https://www.flickr.com/photos/lindenb/), [pinterest](http://www.pinterest.com/yokofakun/drawings/)
+[TB](http://tyeul.tumblr.com/)|[DA](http://yokofakun.deviantart.com/)|[FB](https://www.facebook.com/kakaheska)|[FL](https://www.flickr.com/photos/lindenb/)|[PT](http://www.pinterest.com/yokofakun/drawings/)|[IS](https://www.instagram.com/yokofakun/)
+
 </xsl:text>
+
 
 
 

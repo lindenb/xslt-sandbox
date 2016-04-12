@@ -116,10 +116,16 @@ pref("nglayout.debug.disable_xul_fastload", true);
 /** exectute command <xsl:value-of select="@name"/> */
 function exectute_<xsl:value-of select="@name"/>()
 	{
-	/* validate input */
-	alert('ok');
+	var args=[];
+	<xsl:for-each select="my:checkbox|my:textbox|my:input-file">
+	  <xsl:value-of select="concat('fill',generate-id(.),'()')"/>(args);
+	</xsl:for-each>
+		
+	return null;
 	}
-
+	
+	
+	
 </xsl:template>
 
 
@@ -163,11 +169,22 @@ function exectute_<xsl:value-of select="@name"/>()
 
 
 <xsl:template match="my:checkbox" mode="js">
+
+function <xsl:value-of select="concat('fill',generate-id(.),'()')"/>(args)
+  {
+  var E = document.getElementById('<xsl:apply-templates select="." mode="id"/>');
+  if( E.checked ) {
+    args.push("-<xsl:value-of select="@opt"/>");
+    }
+  return null;
+  }
+
+
 </xsl:template>
 
 <xsl:template match="my:checkbox" mode="xul">
 <xul:checkbox>
-<xsl:attribute name="id"><xsl:value-of select="generate-id(.)"/></xsl:attribute>
+<xsl:attribute name="id"><xsl:apply-templates select="." mode="id"/></xsl:attribute>
 <xsl:attribute name="label"><xsl:apply-templates select="." mode="label"/></xsl:attribute>
 <xsl:attribute name="checked"><xsl:value-of select="@checked"/></xsl:attribute>
 </xul:checkbox>
@@ -175,17 +192,30 @@ function exectute_<xsl:value-of select="@name"/>()
 
 
 <xsl:template match="my:textbox" mode="js">
+
+function <xsl:value-of select="concat('fill',generate-id(.),'()')"/>(args)
+  {
+  var E = document.getElementById('<xsl:apply-templates select="." mode="id"/>');
+  var content = E.value.trim();
+  if(content.length &gt;0)
+    {
+    args.push("-<xsl:value-of select="@opt"/>");
+    args.push(content);
+    }
+  return null;
+  }
+
 </xsl:template>
 
 <xsl:template match="my:textbox" mode="xul">
 <xul:hbox>
 <xul:label flex="1">
 	<xsl:attribute name="value"><xsl:apply-templates select="." mode="label"/>:</xsl:attribute>
-	<xsl:attribute name="control"><xsl:value-of select="generate-id(.)"/></xsl:attribute>
+	<xsl:attribute name="control"><xsl:apply-templates select="." mode="id"/></xsl:attribute>
 </xul:label>
 <xul:textbox flex="5">
-<xsl:attribute name="id"><xsl:value-of select="generate-id(.)"/></xsl:attribute>
-<xsl:attribute name="value"></xsl:attribute>
+<xsl:attribute name="id"><xsl:apply-templates select="." mode="id"/></xsl:attribute>
+<xsl:attribute name="value"><xsl:value-of select=" @value"/></xsl:attribute>
 <xsl:attribute name="checked"><xsl:value-of select="@checked"/></xsl:attribute>
 </xul:textbox>
 </xul:hbox>
@@ -193,26 +223,39 @@ function exectute_<xsl:value-of select="@name"/>()
 
 <!-- https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Tutorial/Open_and_Save_Dialogs -->
 <xsl:template match="my:input-file" mode="js">
+
 function <xsl:value-of select="concat('select',generate-id(.),'()')"/> {
 	var nsIFilePicker = Components.interfaces.nsIFilePicker;
 	var fp = Components.classes["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
 	fp.init(window, "Select a File", nsIFilePicker.modeOpen);
 	var res = fp.show();
 	if (res != nsIFilePicker.returnCancel){
-		document.getElementById('<xsl:value-of select="generate-id(.)"/>').value = fp.file.path;
+		document.getElementById('<xsl:apply-templates select="." mode="id"/>').value = fp.file.path;
 		}
 	}
 
+function <xsl:value-of select="concat('fill',generate-id(.),'()')"/>(args)
+  {
+  var E = document.getElementById('<xsl:apply-templates select="." mode="id"/>');
+  var filename = E.value.trim();
+  if(filename.length &gt;0)
+    {
+    args.push("-<xsl:value-of select="@opt"/>");
+    args.push(filename);
+    }
+  return null;
+  }
+	
 </xsl:template>
 
 <xsl:template match="my:input-file" mode="xul">
 <xul:hbox>
 <xul:label flex="1">
 	<xsl:attribute name="value"><xsl:apply-templates select="." mode="label"/>:</xsl:attribute>
-	<xsl:attribute name="control"><xsl:value-of select="generate-id(.)"/></xsl:attribute>
+	<xsl:attribute name="control"><xsl:apply-templates select="." mode="id"/></xsl:attribute>
 </xul:label>
 <xul:textbox flex="4">
-<xsl:attribute name="id"><xsl:value-of select="generate-id(.)"/></xsl:attribute>
+<xsl:attribute name="id"><xsl:apply-templates select="." mode="id"/></xsl:attribute>
 <xsl:attribute name="value"><xsl:value-of select="generate-id(.)"/>:</xsl:attribute>
 <xsl:attribute name="checked"><xsl:value-of select="@checked"/></xsl:attribute>
 </xul:textbox>
@@ -230,5 +273,15 @@ function <xsl:value-of select="concat('select',generate-id(.),'()')"/> {
 	<xsl:otherwise><xsl:value-of select="generate-id()"/></xsl:otherwise>
 </xsl:choose>
 </xsl:template>
+
+
+<xsl:template match="*" mode="id">
+<xsl:choose>
+	<xsl:when test="@id"><xsl:value-of select="@id"/></xsl:when>
+	<xsl:otherwise><xsl:value-of select="generate-id()"/></xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+
+
 </xsl:stylesheet>
 

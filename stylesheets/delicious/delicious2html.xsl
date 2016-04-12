@@ -47,7 +47,18 @@ Motivation:
 
 <xsl:choose>
 <xsl:when test=" starts-with(@href,'http://www.flickr.com/photos/') or  starts-with(@href,'https://www.flickr.com/photos/')">
-<xsl:variable name="u2" select="substring-before(substring-after(substring-after(@href,'/photos/'),'/'),'/')"/>
+<xsl:variable name="u2">
+    <xsl:choose>
+    	
+    
+		<xsl:when test="contains(substring-after(substring-after(@href,'/photos/'),'/'),'/')">
+			<xsl:value-of select="substring-before(substring-after(substring-after(@href,'/photos/'),'/'),'/')"/>
+		</xsl:when>
+		<xsl:otherwise>
+			<xsl:value-of select="substring-after(substring-after(@href,'/photos/'),'/')"/>
+		</xsl:otherwise>
+	</xsl:choose>
+</xsl:variable>
 <xsl:if test="string-length($u2) &gt;0">
 <a  target="_blank">
 	<xsl:attribute name="href">https://delicious.com/lindenb/search/<xsl:value-of select="$u2"/></xsl:attribute>
