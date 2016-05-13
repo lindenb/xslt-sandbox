@@ -262,6 +262,12 @@ gi|9626372|ref|NC_001422.1|	Enterobacteria phage phiX174 sensu lato, complete ge
 (...)
 ```
 
+### convert genbank gbc to gtf
+should work with simple genbank files (tested with a simple virus)
+
+```bash
+xsltproc --novalid stylesheets/bio/ncbi/gb2gtf.xsl input.gbc.xml | sort -t '  ' -k4,4n > out.gtf
+```
 
 ## Contribute
 
