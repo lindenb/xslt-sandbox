@@ -22,6 +22,10 @@ Example:
 <xsl:key name="taxonkeys" match="Taxon" use="TaxId" />
 <xsl:key name="links" match="LineageEx/Taxon" use="TaxId" />
 
+
+<xsl:variable name="list"  select="'%IDLIST%'"  />
+
+
  
 <xsl:template match="/">
 <xsl:text>digraph G {
@@ -46,9 +50,28 @@ Example:
 
 <xsl:template match="Taxon" mode="node">
 <xsl:if test="generate-id(.)=generate-id(key('taxonkeys',TaxId))">
-<xsl:value-of select="concat('n',TaxId,'[label=&quot;',ScientificName,'&quot;];')"/>
 <xsl:text>
 </xsl:text>
+
+	<xsl:choose>
+         <xsl:when test="
+contains(
+
+    concat(' ', $list, ' '),
+    concat(' ', TaxId, ' ')
+  )
+">
+
+<xsl:value-of select="concat('n',TaxId,'[label=&quot;',ScientificName,'&quot; , color=&quot;green&quot;];')"/>
+
+	</xsl:when>
+         <xsl:otherwise>
+<xsl:value-of select="concat('n',TaxId,'[label=&quot;',ScientificName,'&quot; , color=&quot;black&quot;];')"/>
+         </xsl:otherwise>
+       </xsl:choose>
+
+
+
 </xsl:if>
 </xsl:template>
 
