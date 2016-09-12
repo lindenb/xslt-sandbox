@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF8"?>
+<model xmlns="https://github.com/lindenb/xslt-sandbox/stylesheets/emf" name="Jeter" velocity="true">
+<package namespace-uri="http://www.google.com/" name="mypack" prefix="test">
+	<class name="Bam">
+		<reference name="sample" type="test:Sample"/>
+	</class>
+	<class name="Sample">
+		<attribute name="name" type="string" unique="true" id="true"/>
+	</class>
+</package>
+</model>
+
