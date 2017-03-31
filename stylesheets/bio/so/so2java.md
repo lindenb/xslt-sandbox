@@ -2,11 +2,16 @@
 
 converts 'Sequence ontology in OWL' to a C/java/... code to recreate the ontology tree in memory
 
+# stylesheet
+
+https://github.com/lindenb/xslt-sandbox/blob/master/stylesheets/bio/so/so2java.xsl
+
+
 # Usage
 
 ```
 curl -L  "https://github.com/The-Sequence-Ontology/SO-Ontologies/blob/master/so-simple.owl?raw=true" | xsltproc so2java.xsl -|
-``
+```
 
 # Output
 
@@ -39,7 +44,6 @@ newTerm("SO:0000021","asymmetric_RNA_internal_loop","SO:0000020");
 newTerm("SO:0000022","A_minor_RNA_motif","SO:0000715");
 newTerm("SO:0000023","K_turn_RNA_motif","SO:0000021");
 newTerm("SO:0000024","sarcin_like_RNA_motif","SO:0000021");
-newTerm("","symmetric_RNA_internal_loop","SO:0000020");
 newTerm("SO:0000026","RNA_junction_loop","SO:0000715");
 newTerm("SO:0000027","RNA_hook_turn","SO:0000026");
 newTerm("SO:0000028","base_pair","SO:0000002");
