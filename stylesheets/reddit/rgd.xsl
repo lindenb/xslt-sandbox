@@ -29,7 +29,7 @@
 
 My drawing PASTEURL 
 
-[TB](http://tyeul.tumblr.com/)|[DA](http://yokofakun.deviantart.com/)|[FB](https://www.facebook.com/kakaheska)|[FL](https://www.flickr.com/photos/lindenb/)|[PT](http://www.pinterest.com/yokofakun/drawings/)|[IS](https://www.instagram.com/yokofakun/)
+[IG](https://www.instagram.com/yokofakun/)|[TU](http://tyeul.tumblr.com/)|[DA](http://yokofakun.deviantart.com/)|[FB](https://www.facebook.com/kakaheska)|[PT](http://www.pinterest.com/yokofakun/drawings/)
 
 </xsl:text>
 

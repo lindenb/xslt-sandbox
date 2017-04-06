@@ -34,9 +34,9 @@
 <xsl:text> by </xsl:text>
 <xsl:element name="a">
 <xsl:attribute name="href">
- <xsl:value-of select="concat('https://www.instagram.com/',substring-before(head/meta[@property='og:title']/@content,' '),'/')"/>
+ <xsl:value-of select="concat('https://www.instagram.com/',substring-before(substring-after(head/meta[@name='description']/@content,'by @'),' '),'/')"/>
 </xsl:attribute>
-	<xsl:value-of select="concat('@',substring-before(head/meta[@property='og:title']/@content,' '))"/>
+	<xsl:value-of select="concat('@',substring-before(substring-after(head/meta[@name='description']/@content,'by @'),' '))"/>
 </xsl:element>
  <xsl:text>. </xsl:text>
  <xsl:value-of select="$today"/>

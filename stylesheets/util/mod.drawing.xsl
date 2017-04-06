@@ -27,6 +27,8 @@
 
 <xsl:template name="my-links">
     <div>
+	<a href="https://www.instagram.com/yokofakun/">Instagram</a>
+	<xsl:text> </xsl:text>
 	<a href="http://tyeul.tumblr.com/">Tumblr</a>
 	<xsl:text> </xsl:text>
 	<a href="http://yokofakun.deviantart.com/">DeviantArt</a>
@@ -40,6 +42,6 @@
 </xsl:template>
 
 
-<xsl:variable name="commontags">drawing sketch illustration gimp onedrawingaday portrait dessin femme fille art retrato face visage artwork draw sketchaday dailydrawing sketch_daily<xsl:if test="number(x:month-in-year())=10"> inktober</xsl:if></xsl:variable>
+<xsl:variable name="commontags">drawing sketch illustration gimp onedrawingaday portrait dessin femme fille art retrato face visage artwork draw sketchaday dailydrawing sketch_daily<xsl:if test="number(x:month-in-year())=10"> inktober inktober<xsl:value-of select="x:year()"/></xsl:if></xsl:variable>
 
 </xsl:stylesheet>
