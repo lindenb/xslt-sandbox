@@ -7,16 +7,12 @@
 	xmlns:rgd="https://www.reddit.com/r/redditgetsdrawn/"
         version='1.0'
         >
-<xsl:output method="xml" indent="yes"/>
+<xsl:output method="text" indent="yes"/>
   
 <xsl:template match="/">
-<rdf:RDF
-	xmlns:rgd="https://www.reddit.com/r/redditgetsdrawn/"
-	xmlns:foaf="http://xmlns.com/foaf/0.1/"
-	xmlns:dc="http://purl.org/dc/elements/1.1/"
-	>
+<xsl:text>{</xsl:text>
 	<xsl:apply-templates select="//p[starts-with(.,'Submitter ') and count(a) = 3]"/>
-</rdf:RDF>
+<xsl:text>}</xsl:text>
 </xsl:template>
 
 

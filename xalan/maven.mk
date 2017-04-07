@@ -1,8 +1,3 @@
-this.makefile=$(lastword $(MAKEFILE_LIST))
-this.dir=$(dir $(realpath ${this.makefile}))
-EMPTY :=
-SPACE := $(EMPTY) $(EMPTY)
-lib.dir?=${this.dir}maven
 
 jtidy.libs  =  \
 	$(lib.dir)/net/sf/jtidy/jtidy/r938/jtidy-r938.jar
@@ -13,34 +8,17 @@ xalan.libs  = \
 	$(lib.dir)/xalan/xalan/2.7.2/xalan-2.7.2.jar \
 	$(lib.dir)/xml-apis/xml-apis/1.3.04/xml-apis-1.3.04.jar
 
-.PHONY:all clean
+emf.core.jars=\
+	$(lib.dir)/org/eclipse/emf/org.eclipse.emf.ecore/2.11.1-v20150805-0538/org.eclipse.emf.ecore-2.11.1-v20150805-0538.jar \
+	$(lib.dir)/org/eclipse/emf/org.eclipse.emf.common/2.11.0-v20150805-0538/org.eclipse.emf.common-2.11.0-v20150805-0538.jar
 
+velocity.jars  =  \
+	$(lib.dir)/commons-collections/commons-collections/3.2.1/commons-collections-3.2.1.jar \
+	$(lib.dir)/commons-lang/commons-lang/2.4/commons-lang-2.4.jar \
+	$(lib.dir)/org/apache/velocity/velocity/1.7/velocity-1.7.jar
 
-all: ${this.dir}dist/xalan
-	
-${this.dir}dist/xalan : ${this.dir}dist/xalan.jar ${xalan.libs} 
-	echo '#!/bin/bash' > $@
-	echo 'java -Dfile.encoding=UTF8 -cp "$(subst $(SPACE),:,$(filter %.jar,$^))" org.apache.xalan.xslt.Process $$*' >>  $@
-	chmod +x  $@
+all_maven_jars = $(sort  ${xalan.libs} ${jtidy.libs} ${emf.core.jars} ${velocity.jars})
 
-${this.dir}dist/xalan.jar : ./src/main/java/com/github/lindenb/xslt/img/Image.java \
-				 ./src/main/java/com/github/lindenb/xslt/strings/Strings.java \
-				 ${xalan.libs} 
-	rm -rf tmp
-	mkdir -p  dist tmp/WEB-INF
-	javac  -classpath "$(subst $(SPACE),:,$(filter %.jar,$^))" -d tmp -sourcepath ./src/main/java $(filter %.java,$^)
-	echo "Manifest-Version: 1.0" > tmp/mf
-	echo "Main-Class: org.apache.xalan.xslt.Process" >>  tmp/mf
-	echo "Class-Path: $(realpath $(filter %.jar,$^))" | fold -w 71 | awk '{printf("%s%s\n",(NR==1?"": " "),$$0);}' >>  tmp/mf
-	jar cfvm $@ tmp/mf -C tmp .
-	rm -rf tmp
-
-
-clean:
-	rm -rf tmp dist maven
-	
-	
-all_maven_jars = $(sort  ${xalan.libs})
-${xalan.libs}  : 
+${all_maven_jars}  : 
 	mkdir -p $(dir $@) && wget -O "$@" "http://central.maven.org/maven2/$(patsubst ${lib.dir}/%,%,$@)"
 

@@ -54,7 +54,9 @@ Motivation:
 </xsl:choose>
 <xsl:text> </xsl:text>
 <xsl:value-of select="$root/rdfs:label/text()"/>
-<xsl:text>
+<xsl:text> [</xsl:text>
+<xsl:value-of select="oboInOwl:id/text()"/>
+<xsl:text>]
 </xsl:text>
 <xsl:for-each select="$children">
 <xsl:call-template name="recurse">

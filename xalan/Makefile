@@ -3,20 +3,17 @@ this.dir=$(dir $(realpath ${this.makefile}))
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 lib.dir?=${this.dir}maven
-
-jtidy.libs  =  \
-	$(lib.dir)/net/sf/jtidy/jtidy/r938/jtidy-r938.jar
-
-
-xalan.libs  = \
-	$(lib.dir)/xalan/serializer/2.7.2/serializer-2.7.2.jar \
-	$(lib.dir)/xalan/xalan/2.7.2/xalan-2.7.2.jar \
-	$(lib.dir)/xml-apis/xml-apis/1.3.04/xml-apis-1.3.04.jar
-
 .PHONY:all clean
 
-
 all: ${this.dir}dist/xalan
+
+include maven.mk
+
+
+
+
+
+
 	
 ${this.dir}dist/xalan : ${this.dir}dist/xalan.jar ${xalan.libs} 
 	echo '#!/bin/bash' > $@
@@ -40,7 +37,4 @@ clean:
 	rm -rf tmp dist maven
 	
 	
-all_maven_jars = $(sort  ${xalan.libs})
-${xalan.libs}  : 
-	mkdir -p $(dir $@) && wget -O "$@" "http://central.maven.org/maven2/$(patsubst ${lib.dir}/%,%,$@)"
 
