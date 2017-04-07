@@ -210,10 +210,17 @@ Example:  curl -s "https://github.com/lindenb/jvarkit/wiki/SamJS" | xsltproc -\-
 
 
 <xsl:template match="a[@href]">
+<xsl:choose>
+<xsl:when test="starts-with(@href,'#') or string-length(normalize-space(.)) = 0">
+<xsl:apply-templates/>
+</xsl:when>
+<xsl:otherwise>
 <a>
 <xsl:attribute name="href"><xsl:value-of select="@href"/></xsl:attribute>
 <xsl:apply-templates/>
 </a>
+</xsl:otherwise>
+</xsl:choose>
 </xsl:template>
 
 
