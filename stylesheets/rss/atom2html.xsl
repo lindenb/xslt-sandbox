@@ -39,6 +39,9 @@
 </xsl:attribute>
 <xsl:value-of select="atom:title/text()"/>
 </a>
+<xsl:text> (</xsl:text>
+<xsl:value-of select="atom:updated/text()"/>
+<xsl:text>)</xsl:text>
 </dt>
 <dd>
 <xsl:choose>

@@ -4,7 +4,7 @@
     xmlns:atom="http://www.w3.org/2005/Atom"
     xmlns="http://www.w3.org/2005/Atom"
     xmlns:date="http://exslt.org/dates-and-times"
-
+	xmlns:creativeCommons="http://backend.userland.com/creativeCommonsRssModule"
     exclude-result-prefixes="atom date"
 	version="1.0" >
 <xsl:output method="xml"/>
