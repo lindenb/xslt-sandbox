@@ -1,10 +1,11 @@
 <?xml version='1.0'  encoding="ISO-8859-1"?>
 <xsl:stylesheet
 	xmlns:xsl='http://www.w3.org/1999/XSL/Transform'
+	xmlns:xhtml='http://www.w3.org/1999/xhtml'
 	xmlns:media="http://search.yahoo.com/mrss/"
 	xmlns:atom="http://www.w3.org/2005/Atom"
 	xmlns:creativeCommons="http://backend.userland.com/creativeCommonsRssModule"
-	exclude-result-prefixes="creativeCommons atom media"
+	exclude-result-prefixes="creativeCommons atom media xhtml"
 	version='1.1'
 	>
 <xsl:output method="xml" indent="yes"/>
@@ -48,6 +49,9 @@
 	<xsl:when test="atom:content/@type='html'">
 		<xsl:value-of select="atom:content" disable-output-escaping="yes"/>
 	</xsl:when>
+	<xsl:when test="atom:content/@type='xhtml'">
+		<xsl:apply-templates select="*" mode="cp"/>
+	</xsl:when>
 	<xsl:choose>
 		<xsl:value-of select="atom:content"/>
 	</xsl:choose>
@@ -55,6 +59,10 @@
 </dd>
 </xsl:template>
 
-
+<xsl:template match="@*|node()" mode="cp">
+	<xsl:copy>
+            <xsl:apply-templates select="@*|node()" mode="cp"/>
+     </xsl:copy>
+</xsl:template>
 
 </xsl:stylesheet>
