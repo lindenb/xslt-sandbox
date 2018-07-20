@@ -44,7 +44,7 @@ Example:
 <xsl:value-of select="$version"/>
 <xsl:text>/</xsl:text>
 <xsl:value-of select="$basename"/>
-<xsl:text>.</xsl:text>
+<xsl:text>-</xsl:text>
 <xsl:value-of select="$version"/>
 <xsl:text>.jar \
 </xsl:text>
