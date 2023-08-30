@@ -25,6 +25,7 @@ function init() {
 	};
 function show(idx) {
 	if(idx&lt;0 ||idx &gt;=feeds.length) return;
+	window.scrollTo(0,0);
 	var feed = feeds[idx];
 	var root= document.getElementById("content");
 	while(root.firstChild) root.removeChild(root.firstChild);
